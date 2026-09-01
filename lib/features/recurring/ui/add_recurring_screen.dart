@@ -1,7 +1,8 @@
 import 'package:decimal/decimal.dart';
-import 'package:exp_share/core/money.dart';
 import 'package:exp_share/core/supabase_client.dart';
 import 'package:exp_share/features/expenses/providers/categories_provider.dart';
+import 'package:exp_share/features/expenses/split_logic.dart';
+import 'package:exp_share/features/expenses/ui/split_editor.dart';
 import 'package:exp_share/features/groups/providers/groups_provider.dart';
 import 'package:exp_share/features/recurring/data/recurring_repository.dart';
 import 'package:exp_share/models/category.dart';
@@ -12,8 +13,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-// Push 4 scope: recurring templates split equally among selected participants.
-// The schema stores generic splits, so exact/percent can be added later.
 class AddRecurringScreen extends ConsumerStatefulWidget {
   const AddRecurringScreen({super.key, required this.groupId});
   final String groupId;
@@ -28,6 +27,10 @@ class _AddRecurringScreenState extends ConsumerState<AddRecurringScreen> {
   final _intervalController = TextEditingController(text: '1');
   final _formKey = GlobalKey<FormState>();
 
+  final Map<String, TextEditingController> _exactCtl = {};
+  final Map<String, TextEditingController> _percentCtl = {};
+
+  String _splitType = 'equal';
   String _frequency = 'monthly';
   DateTime _startDate = DateTime.now();
   final Set<String> _selected = {};
@@ -41,6 +44,12 @@ class _AddRecurringScreenState extends ConsumerState<AddRecurringScreen> {
     _amountController.dispose();
     _descriptionController.dispose();
     _intervalController.dispose();
+    for (final c in _exactCtl.values) {
+      c.dispose();
+    }
+    for (final c in _percentCtl.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -48,21 +57,40 @@ class _AddRecurringScreenState extends ConsumerState<AddRecurringScreen> {
       Decimal.tryParse(_amountController.text.trim()) ?? Decimal.zero;
   int get _interval => int.tryParse(_intervalController.text.trim()) ?? 1;
 
+  TextEditingController _exact(String id) =>
+      _exactCtl.putIfAbsent(id, () => TextEditingController());
+  TextEditingController _percent(String id) =>
+      _percentCtl.putIfAbsent(id, () => TextEditingController());
+
+  SplitOutcome _compute(List<GroupMember> members) => computeSplits(
+        splitType: _splitType,
+        orderedMemberIds: members.map((m) => m.id).toList(),
+        selected: _selected,
+        amount: _amount,
+        exact: {
+          for (final id in _selected)
+            id: Decimal.tryParse(_exact(id).text.trim()) ?? Decimal.zero,
+        },
+        percent: {
+          for (final id in _selected)
+            id: Decimal.tryParse(_percent(id).text.trim()) ?? Decimal.zero,
+        },
+      );
+
   Future<void> _submit(List<GroupMember> members) async {
     if (!_formKey.currentState!.validate()) return;
-    final selected = members.where((m) => _selected.contains(m.id)).toList();
-    if (selected.isEmpty || _payerMemberId == null) {
+    if (_payerMemberId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pick a payer and at least one participant')),
+        const SnackBar(content: Text('Pick who pays')),
       );
       return;
     }
-
-    final shares = splitEqually(_amount, selected.length);
-    final splits = [
-      for (var i = 0; i < selected.length; i++)
-        (memberId: selected[i].id, shareAmount: shares[i], sharePercent: null),
-    ];
+    final result = _compute(members);
+    if (!result.valid) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(result.status)));
+      return;
+    }
 
     setState(() => _submitting = true);
     try {
@@ -71,12 +99,12 @@ class _AddRecurringScreenState extends ConsumerState<AddRecurringScreen> {
         payerMemberId: _payerMemberId!,
         amount: _amount,
         description: _descriptionController.text.trim(),
-        splitType: 'equal',
+        splitType: _splitType,
         categoryId: _categoryId,
         frequency: _frequency,
         intervalCount: _interval < 1 ? 1 : _interval,
         nextOccurrence: _startDate,
-        splits: splits,
+        splits: result.splits,
       );
       if (mounted) context.pop();
     } on Exception catch (e) {
@@ -102,7 +130,10 @@ class _AddRecurringScreenState extends ConsumerState<AddRecurringScreen> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (members) {
-          if (!_inited && members.isNotEmpty) {
+          if (members.isEmpty) {
+            return const Center(child: Text('No members in this group.'));
+          }
+          if (!_inited) {
             _selected.addAll(members.map((m) => m.id));
             final myUid = supabase.auth.currentUser?.id;
             _payerMemberId = members
@@ -112,9 +143,7 @@ class _AddRecurringScreenState extends ConsumerState<AddRecurringScreen> {
                 members.first.id;
             _inited = true;
           }
-          final perHead = _selected.isEmpty
-              ? null
-              : splitEqually(_amount, _selected.length).first;
+          final compute = _compute(members);
 
           return Form(
             key: _formKey,
@@ -244,28 +273,55 @@ class _AddRecurringScreenState extends ConsumerState<AddRecurringScreen> {
                     if (picked != null) setState(() => _startDate = picked);
                   },
                 ),
-                const SizedBox(height: 16),
-                Text('Split equally between',
-                    style: Theme.of(context).textTheme.titleSmall),
-                ...members.map((m) => CheckboxListTile(
-                      contentPadding: EdgeInsets.zero,
-                      controlAffinity: ListTileControlAffinity.leading,
-                      value: _selected.contains(m.id),
-                      onChanged: (v) => setState(() {
-                        if (v ?? false) {
+                const SizedBox(height: 24),
+                Text('Split', style: Theme.of(context).textTheme.titleSmall),
+                const SizedBox(height: 8),
+                SplitTypeSelector(
+                  value: _splitType,
+                  onChanged: (v) => setState(() => _splitType = v),
+                ),
+                const SizedBox(height: 8),
+                ...members.map((m) => ParticipantSplitRow(
+                      member: m,
+                      included: _selected.contains(m.id),
+                      splitType: _splitType,
+                      equalShare:
+                          _splitType == 'equal' && _selected.contains(m.id)
+                              ? compute.splits
+                                  .where((s) => s.memberId == m.id)
+                                  .map((s) => s.shareAmount)
+                                  .firstOrNull
+                              : null,
+                      exactController: _exact(m.id),
+                      percentController: _percent(m.id),
+                      onToggle: (on) => setState(() {
+                        if (on) {
                           _selected.add(m.id);
                         } else {
                           _selected.remove(m.id);
                         }
                       }),
-                      title: Text(m.displayName),
-                      secondary: _selected.contains(m.id) && perHead != null
-                          ? Text(formatCurrency(perHead))
-                          : null,
+                      onChanged: () => setState(() {}),
                     )),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(
+                      compute.valid ? Icons.check_circle : Icons.info_outline,
+                      size: 18,
+                      color: compute.valid
+                          ? Colors.green
+                          : Theme.of(context).colorScheme.error,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(compute.status)),
+                  ],
+                ),
                 const SizedBox(height: 24),
                 FilledButton(
-                  onPressed: _submitting ? null : () => _submit(members),
+                  onPressed: _submitting || !compute.valid
+                      ? null
+                      : () => _submit(members),
                   child: _submitting
                       ? const SizedBox(
                           height: 20,

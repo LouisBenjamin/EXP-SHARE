@@ -1,8 +1,7 @@
 import 'package:decimal/decimal.dart';
 import 'package:exp_share/core/supabase_client.dart';
+import 'package:exp_share/features/expenses/split_logic.dart';
 import 'package:exp_share/models/recurring_expense.dart';
-
-typedef Split = ({String memberId, Decimal shareAmount, Decimal? sharePercent});
 
 class RecurringRepository {
   Future<List<RecurringExpense>> fetchRecurring({required String groupId}) async {
