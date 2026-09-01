@@ -29,6 +29,13 @@ dependencies:
   # Group photo picking (web + Android)
   image_picker: ^1.1.2
 
+  # Bank statement import — RFC-4180 CSV parsing (quoted fields, CRLF)
+  csv: ^6.0.0
+
+  # SHA-256 for the opaque transaction fingerprint. Promoted from a transitive
+  # dep of supabase_flutter so it can be imported directly.
+  crypto: ^3.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
