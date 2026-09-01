@@ -2,12 +2,14 @@ import 'package:exp_share/core/money.dart';
 import 'package:exp_share/core/supabase_client.dart';
 import 'package:exp_share/features/balances/providers/balances_provider.dart';
 import 'package:exp_share/features/balances/ui/balances_tab.dart';
+import 'package:exp_share/features/expenses/data/expenses_repository.dart';
 import 'package:exp_share/features/expenses/providers/expenses_provider.dart';
 import 'package:exp_share/features/groups/data/groups_repository.dart';
 import 'package:exp_share/features/groups/providers/groups_provider.dart';
 import 'package:exp_share/features/realtime/group_realtime_provider.dart';
 import 'package:exp_share/models/expense.dart';
 import 'package:exp_share/models/group_member.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -129,24 +131,98 @@ class _ExpensesTab extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
               itemCount: expenses.length,
               separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (_, i) => _ExpenseCard(expense: expenses[i]),
+              itemBuilder: (_, i) =>
+                  _ExpenseCard(expense: expenses[i], groupId: groupId),
             ),
     );
   }
 }
 
-class _ExpenseCard extends StatelessWidget {
-  const _ExpenseCard({required this.expense});
+class _ExpenseCard extends ConsumerWidget {
+  const _ExpenseCard({required this.expense, required this.groupId});
   final Expense expense;
+  final String groupId;
+
+  void _refresh(WidgetRef ref) {
+    ref.invalidate(expensesProvider(groupId));
+    ref.invalidate(balancesProvider(groupId));
+  }
+
+  Future<void> _edit(BuildContext context, WidgetRef ref) async {
+    await context.push('/groups/$groupId/expenses/${expense.id}/edit');
+    _refresh(ref);
+  }
+
+  Future<void> _delete(BuildContext context, WidgetRef ref) async {
+    final label = expense.description.isEmpty ? 'this expense' : '"${expense.description}"';
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Delete expense?'),
+        content: Text('$label will be removed and balances recalculated.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await ExpensesRepository().deleteExpense(expenseId: expense.id);
+      _refresh(ref);
+    } on Exception catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    }
+  }
+
+  void _showActions(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetCtx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit_outlined),
+              title: const Text('Edit'),
+              onTap: () {
+                Navigator.pop(sheetCtx);
+                _edit(context, ref);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline),
+              title: const Text('Delete'),
+              onTap: () {
+                Navigator.pop(sheetCtx);
+                _delete(context, ref);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final dateStr = DateFormat('MMM d').format(expense.occurredOn);
     final amountStr = formatCurrency(expense.amount, currency: expense.currency);
 
     return Card(
+      clipBehavior: Clip.hardEdge,
       child: ListTile(
+        onTap: () => _showActions(context, ref),
         leading: CircleAvatar(
           backgroundColor: theme.colorScheme.secondaryContainer,
           child: Icon(
@@ -247,7 +323,7 @@ class _JoinCodeCard extends StatelessWidget {
               ),
             ),
             IconButton(
-              tooltip: 'Copy',
+              tooltip: 'Copy code',
               icon: Icon(Icons.copy, color: theme.colorScheme.onPrimaryContainer),
               onPressed: () {
                 Clipboard.setData(ClipboardData(text: code));
@@ -256,11 +332,36 @@ class _JoinCodeCard extends StatelessWidget {
                 );
               },
             ),
+            IconButton(
+              tooltip: 'Share invite',
+              icon: Icon(Icons.ios_share,
+                  color: theme.colorScheme.onPrimaryContainer),
+              onPressed: () {
+                // On web, share a one-tap link that opens straight to the join
+                // screen; elsewhere there's no meaningful URL, so share the code.
+                final text = kIsWeb
+                    ? _inviteLink(code)
+                    : 'Join my group on EXP-SHARE with code $code';
+                Clipboard.setData(ClipboardData(text: text));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content:
+                        Text(kIsWeb ? 'Invite link copied' : 'Invite copied'),
+                  ),
+                );
+              },
+            ),
           ],
         ),
       ),
     );
   }
+
+  // Builds a deep link to the join screen from the app's current origin. The
+  // app uses hash routing on web, so the route lives in the URL fragment:
+  // https://host/#/join?code=XXXXXX
+  String _inviteLink(String code) =>
+      Uri.base.replace(fragment: '/join?code=$code').toString();
 }
 
 class _MemberTile extends StatelessWidget {

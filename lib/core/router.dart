@@ -3,6 +3,7 @@ import 'package:exp_share/features/auth/ui/login_screen.dart';
 import 'package:exp_share/features/expenses/ui/add_expense_screen.dart';
 import 'package:exp_share/features/groups/ui/group_detail_screen.dart';
 import 'package:exp_share/features/groups/ui/groups_list_screen.dart';
+import 'package:exp_share/features/groups/ui/join_by_link_screen.dart';
 import 'package:exp_share/features/insights/ui/insights_screen.dart';
 import 'package:exp_share/features/recurring/ui/add_recurring_screen.dart';
 import 'package:exp_share/features/recurring/ui/recurring_list_screen.dart';
@@ -29,6 +30,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/login',
         builder: (_, __) => const LoginScreen(),
       ),
+      // Invite deep link: /join?code=XXXXXX. Auth redirect runs first, so the
+      // user is always signed in by the time this builds.
+      GoRoute(
+        path: '/join',
+        builder: (_, state) =>
+            JoinByLinkScreen(code: state.uri.queryParameters['code']),
+      ),
       GoRoute(
         path: '/groups',
         builder: (_, __) => const GroupsListScreen(),
@@ -43,6 +51,13 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: 'expenses/new',
                 builder: (_, state) => AddExpenseScreen(
                   groupId: state.pathParameters['groupId']!,
+                ),
+              ),
+              GoRoute(
+                path: 'expenses/:expenseId/edit',
+                builder: (_, state) => AddExpenseScreen(
+                  groupId: state.pathParameters['groupId']!,
+                  expenseId: state.pathParameters['expenseId'],
                 ),
               ),
               GoRoute(
