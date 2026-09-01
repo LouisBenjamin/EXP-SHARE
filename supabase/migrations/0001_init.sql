@@ -14,15 +14,23 @@ create table profiles (
   created_at  timestamptz not null default now()
 );
 
+-- security definer + an explicit search_path so the auth role can resolve
+-- public.profiles when this fires from an insert on auth.users. Without the
+-- search_path the unqualified table name fails → "Database error saving new user".
 create or replace function handle_new_user()
-returns trigger language plpgsql security definer as $$
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
 begin
-  insert into profiles (id, display_name)
+  insert into public.profiles (id, display_name)
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'display_name',
              split_part(new.email, '@', 1))
-  );
+  )
+  on conflict (id) do nothing;
   return new;
 end;
 $$;
@@ -191,6 +199,13 @@ create policy "update own profile" on profiles
 -- groups
 create policy "members read group" on groups
   for select using (is_group_member(id));
+
+-- Creators can always read their own groups. Required so createGroup()'s
+-- `insert ... returning` (Supabase .insert().select()) can see the new row:
+-- at that instant the creator has no group_members row yet, so is_group_member
+-- would otherwise hide it and the insert fails the RLS check.
+create policy "creator reads group" on groups
+  for select using (created_by = auth.uid());
 
 create policy "authed users create group" on groups
   for insert with check (auth.uid() is not null and created_by = auth.uid());
