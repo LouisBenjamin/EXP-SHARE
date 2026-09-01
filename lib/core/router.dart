@@ -3,6 +3,7 @@ import 'package:exp_share/features/auth/ui/login_screen.dart';
 import 'package:exp_share/features/expenses/ui/add_expense_screen.dart';
 import 'package:exp_share/features/groups/ui/group_detail_screen.dart';
 import 'package:exp_share/features/groups/ui/groups_list_screen.dart';
+import 'package:exp_share/features/insights/ui/insights_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -39,6 +40,12 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'expenses/new',
                 builder: (_, state) => AddExpenseScreen(
+                  groupId: state.pathParameters['groupId']!,
+                ),
+              ),
+              GoRoute(
+                path: 'insights',
+                builder: (_, state) => InsightsScreen(
                   groupId: state.pathParameters['groupId']!,
                 ),
               ),

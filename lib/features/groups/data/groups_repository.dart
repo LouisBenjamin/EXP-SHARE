@@ -20,6 +20,28 @@ class GroupsRepository {
     return Group.fromJson(data);
   }
 
+  // Join the group matching [code] (adds the current user as a member).
+  // Returns the joined group. Throws if the code is invalid.
+  Future<Group> joinGroupByCode({required String code}) async {
+    final data = await supabase.rpc(
+      'join_group_by_code',
+      params: {'p_code': code.trim()},
+    );
+    return Group.fromJson(data as Map<String, dynamic>);
+  }
+
+  // Add an account-less guest participant to a group the caller belongs to.
+  Future<GroupMember> addGuest({
+    required String groupId,
+    required String name,
+  }) async {
+    final data = await supabase.rpc(
+      'add_guest_member',
+      params: {'p_group_id': groupId, 'p_name': name},
+    );
+    return GroupMember.fromJson(data as Map<String, dynamic>);
+  }
+
   Future<Group> createGroup({required String name}) async {
     final userId = supabase.auth.currentUser!.id;
 

@@ -1,3 +1,4 @@
+import 'package:exp_share/features/groups/data/groups_repository.dart';
 import 'package:exp_share/features/groups/providers/groups_provider.dart';
 import 'package:exp_share/features/groups/ui/create_group_dialog.dart';
 import 'package:exp_share/models/group.dart';
@@ -16,6 +17,16 @@ class GroupsListScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('My Groups'),
         centerTitle: false,
+        actions: [
+          IconButton(
+            tooltip: 'Join by code',
+            icon: const Icon(Icons.login),
+            onPressed: () => showDialog(
+              context: context,
+              builder: (_) => const JoinGroupDialog(),
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => showDialog(
@@ -96,6 +107,79 @@ class _EmptyState extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class JoinGroupDialog extends ConsumerStatefulWidget {
+  const JoinGroupDialog({super.key});
+
+  @override
+  ConsumerState<JoinGroupDialog> createState() => _JoinGroupDialogState();
+}
+
+class _JoinGroupDialogState extends ConsumerState<JoinGroupDialog> {
+  final _controller = TextEditingController();
+  bool _joining = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _join() async {
+    final code = _controller.text.trim();
+    if (code.isEmpty) return;
+    setState(() => _joining = true);
+    try {
+      final group = await GroupsRepository().joinGroupByCode(code: code);
+      ref.invalidate(groupsProvider);
+      if (mounted) {
+        Navigator.of(context).pop();
+        context.push('/groups/${group.id}');
+      }
+    } on Exception catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    } finally {
+      if (mounted) setState(() => _joining = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Join a group'),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        textCapitalization: TextCapitalization.characters,
+        onSubmitted: (_) => _join(),
+        decoration: const InputDecoration(
+          labelText: 'Invite code',
+          hintText: 'e.g. AB452A',
+          border: OutlineInputBorder(),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _joining ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _joining ? null : _join,
+          child: _joining
+              ? const SizedBox(
+                  height: 16,
+                  width: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Join'),
+        ),
+      ],
     );
   }
 }
