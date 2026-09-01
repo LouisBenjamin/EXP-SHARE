@@ -1,5 +1,6 @@
 import 'package:decimal/decimal.dart';
 import 'package:exp_share/core/supabase_client.dart';
+import 'package:exp_share/core/widgets/page_body.dart';
 import 'package:exp_share/features/expenses/providers/categories_provider.dart';
 import 'package:exp_share/features/expenses/split_logic.dart';
 import 'package:exp_share/features/expenses/ui/split_editor.dart';
@@ -126,214 +127,216 @@ class _AddRecurringScreenState extends ConsumerState<AddRecurringScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('New recurring expense')),
-      body: membersAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
-        data: (members) {
-          if (members.isEmpty) {
-            return const Center(child: Text('No members in this group.'));
-          }
-          if (!_inited) {
-            _selected.addAll(members.map((m) => m.id));
-            final myUid = supabase.auth.currentUser?.id;
-            _payerMemberId = members
-                    .where((m) => m.userId == myUid)
-                    .map((m) => m.id)
-                    .firstOrNull ??
-                members.first.id;
-            _inited = true;
-          }
-          final compute = _compute(members);
+      body: PageBody(
+        child: membersAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(child: Text('Error: $e')),
+          data: (members) {
+            if (members.isEmpty) {
+              return const Center(child: Text('No members in this group.'));
+            }
+            if (!_inited) {
+              _selected.addAll(members.map((m) => m.id));
+              final myUid = supabase.auth.currentUser?.id;
+              _payerMemberId = members
+                      .where((m) => m.userId == myUid)
+                      .map((m) => m.id)
+                      .firstOrNull ??
+                  members.first.id;
+              _inited = true;
+            }
+            final compute = _compute(members);
 
-          return Form(
-            key: _formKey,
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 96),
-              children: [
-                TextFormField(
-                  controller: _amountController,
-                  autofocus: true,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-                  ],
-                  onChanged: (_) => setState(() {}),
-                  decoration: const InputDecoration(
-                    labelText: 'Amount',
-                    prefixText: r'$',
-                    border: OutlineInputBorder(),
+            return Form(
+              key: _formKey,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 96),
+                children: [
+                  TextFormField(
+                    controller: _amountController,
+                    autofocus: true,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                    ],
+                    onChanged: (_) => setState(() {}),
+                    decoration: const InputDecoration(
+                      labelText: 'Amount',
+                      prefixText: r'$',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (v) {
+                      final a = Decimal.tryParse((v ?? '').trim());
+                      if (a == null || a <= Decimal.zero) {
+                        return 'Enter a valid amount';
+                      }
+                      return null;
+                    },
                   ),
-                  validator: (v) {
-                    final a = Decimal.tryParse((v ?? '').trim());
-                    if (a == null || a <= Decimal.zero) {
-                      return 'Enter a valid amount';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _descriptionController,
-                  textCapitalization: TextCapitalization.sentences,
-                  decoration: const InputDecoration(
-                    labelText: 'Description',
-                    hintText: 'e.g. Rent, Netflix, Internet…',
-                    border: OutlineInputBorder(),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _descriptionController,
+                    textCapitalization: TextCapitalization.sentences,
+                    decoration: const InputDecoration(
+                      labelText: 'Description',
+                      hintText: 'e.g. Rent, Netflix, Internet…',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String?>(
-                  initialValue: _categoryId,
-                  isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Category (optional)',
-                    border: OutlineInputBorder(),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String?>(
+                    initialValue: _categoryId,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Category (optional)',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: [
+                      const DropdownMenuItem(value: null, child: Text('None')),
+                      ...categories.map((c) => DropdownMenuItem(
+                            value: c.id,
+                            child: Row(
+                              children: [
+                                Icon(iconForCategory(c.icon), size: 18),
+                                const SizedBox(width: 8),
+                                Text(c.name),
+                              ],
+                            ),
+                          )),
+                    ],
+                    onChanged: (v) => setState(() => _categoryId = v),
                   ),
-                  items: [
-                    const DropdownMenuItem(value: null, child: Text('None')),
-                    ...categories.map((c) => DropdownMenuItem(
-                          value: c.id,
-                          child: Row(
-                            children: [
-                              Icon(iconForCategory(c.icon), size: 18),
-                              const SizedBox(width: 8),
-                              Text(c.name),
-                            ],
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    initialValue: _payerMemberId,
+                    decoration: const InputDecoration(
+                      labelText: 'Paid by',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: members
+                        .map((m) => DropdownMenuItem(
+                              value: m.id,
+                              child: Text(m.displayName),
+                            ))
+                        .toList(),
+                    onChanged: (v) => setState(() => _payerMemberId = v),
+                  ),
+                  const SizedBox(height: 24),
+                  Text('Repeats', style: Theme.of(context).textTheme.titleSmall),
+                  const SizedBox(height: 8),
+                  SegmentedButton<String>(
+                    segments: const [
+                      ButtonSegment(value: 'daily', label: Text('Daily')),
+                      ButtonSegment(value: 'weekly', label: Text('Weekly')),
+                      ButtonSegment(value: 'monthly', label: Text('Monthly')),
+                    ],
+                    selected: {_frequency},
+                    onSelectionChanged: (s) => setState(() => _frequency = s.first),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const Text('Every'),
+                      const SizedBox(width: 12),
+                      SizedBox(
+                        width: 64,
+                        child: TextField(
+                          controller: _intervalController,
+                          keyboardType: TextInputType.number,
+                          textAlign: TextAlign.center,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          onChanged: (_) => setState(() {}),
+                          decoration: const InputDecoration(
+                            isDense: true,
+                            border: OutlineInputBorder(),
                           ),
-                        )),
-                  ],
-                  onChanged: (v) => setState(() => _categoryId = v),
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  initialValue: _payerMemberId,
-                  decoration: const InputDecoration(
-                    labelText: 'Paid by',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: members
-                      .map((m) => DropdownMenuItem(
-                            value: m.id,
-                            child: Text(m.displayName),
-                          ))
-                      .toList(),
-                  onChanged: (v) => setState(() => _payerMemberId = v),
-                ),
-                const SizedBox(height: 24),
-                Text('Repeats', style: Theme.of(context).textTheme.titleSmall),
-                const SizedBox(height: 8),
-                SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(value: 'daily', label: Text('Daily')),
-                    ButtonSegment(value: 'weekly', label: Text('Weekly')),
-                    ButtonSegment(value: 'monthly', label: Text('Monthly')),
-                  ],
-                  selected: {_frequency},
-                  onSelectionChanged: (s) => setState(() => _frequency = s.first),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    const Text('Every'),
-                    const SizedBox(width: 12),
-                    SizedBox(
-                      width: 64,
-                      child: TextField(
-                        controller: _intervalController,
-                        keyboardType: TextInputType.number,
-                        textAlign: TextAlign.center,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        onChanged: (_) => setState(() {}),
-                        decoration: const InputDecoration(
-                          isDense: true,
-                          border: OutlineInputBorder(),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(_unitLabel()),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.event),
-                  title: const Text('Starts on'),
-                  trailing: Text(DateFormat('MMM d, yyyy').format(_startDate)),
-                  onTap: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: _startDate,
-                      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-                      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
-                    );
-                    if (picked != null) setState(() => _startDate = picked);
-                  },
-                ),
-                const SizedBox(height: 24),
-                Text('Split', style: Theme.of(context).textTheme.titleSmall),
-                const SizedBox(height: 8),
-                SplitTypeSelector(
-                  value: _splitType,
-                  onChanged: (v) => setState(() => _splitType = v),
-                ),
-                const SizedBox(height: 8),
-                ...members.map((m) => ParticipantSplitRow(
-                      member: m,
-                      included: _selected.contains(m.id),
-                      splitType: _splitType,
-                      equalShare:
-                          _splitType == 'equal' && _selected.contains(m.id)
-                              ? compute.splits
-                                  .where((s) => s.memberId == m.id)
-                                  .map((s) => s.shareAmount)
-                                  .firstOrNull
-                              : null,
-                      exactController: _exact(m.id),
-                      percentController: _percent(m.id),
-                      onToggle: (on) => setState(() {
-                        if (on) {
-                          _selected.add(m.id);
-                        } else {
-                          _selected.remove(m.id);
-                        }
-                      }),
-                      onChanged: () => setState(() {}),
-                    )),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(
-                      compute.valid ? Icons.check_circle : Icons.info_outline,
-                      size: 18,
-                      color: compute.valid
-                          ? Colors.green
-                          : Theme.of(context).colorScheme.error,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(child: Text(compute.status)),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: _submitting || !compute.valid
-                      ? null
-                      : () => _submit(members),
-                  child: _submitting
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Save recurring expense'),
-                ),
-              ],
-            ),
-          );
-        },
+                      const SizedBox(width: 12),
+                      Text(_unitLabel()),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.event),
+                    title: const Text('Starts on'),
+                    trailing: Text(DateFormat('MMM d, yyyy').format(_startDate)),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _startDate,
+                        firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                        lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+                      );
+                      if (picked != null) setState(() => _startDate = picked);
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  Text('Split', style: Theme.of(context).textTheme.titleSmall),
+                  const SizedBox(height: 8),
+                  SplitTypeSelector(
+                    value: _splitType,
+                    onChanged: (v) => setState(() => _splitType = v),
+                  ),
+                  const SizedBox(height: 8),
+                  ...members.map((m) => ParticipantSplitRow(
+                        member: m,
+                        included: _selected.contains(m.id),
+                        splitType: _splitType,
+                        equalShare:
+                            _splitType == 'equal' && _selected.contains(m.id)
+                                ? compute.splits
+                                    .where((s) => s.memberId == m.id)
+                                    .map((s) => s.shareAmount)
+                                    .firstOrNull
+                                : null,
+                        exactController: _exact(m.id),
+                        percentController: _percent(m.id),
+                        onToggle: (on) => setState(() {
+                          if (on) {
+                            _selected.add(m.id);
+                          } else {
+                            _selected.remove(m.id);
+                          }
+                        }),
+                        onChanged: () => setState(() {}),
+                      )),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(
+                        compute.valid ? Icons.check_circle : Icons.info_outline,
+                        size: 18,
+                        color: compute.valid
+                            ? Colors.green
+                            : Theme.of(context).colorScheme.error,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(compute.status)),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  FilledButton(
+                    onPressed: _submitting || !compute.valid
+                        ? null
+                        : () => _submit(members),
+                    child: _submitting
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Save recurring expense'),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }

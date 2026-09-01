@@ -1,5 +1,6 @@
 import 'package:decimal/decimal.dart';
 import 'package:exp_share/core/supabase_client.dart';
+import 'package:exp_share/core/widgets/page_body.dart';
 import 'package:exp_share/features/expenses/data/expenses_repository.dart';
 import 'package:exp_share/features/expenses/providers/categories_provider.dart';
 import 'package:exp_share/features/expenses/providers/expense_splits_provider.dart';
@@ -160,51 +161,53 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       appBar: AppBar(
         title: Text(widget.isEditing ? 'Edit expense' : 'Add expense'),
       ),
-      body: membersAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
-        data: (members) {
-          if (members.isEmpty) {
-            return const Center(child: Text('No members in this group.'));
-          }
-          // New expense: seed defaults immediately. Editing: wait for the
-          // expense + its splits to load, then seed from them.
-          if (!widget.isEditing) {
-            if (!_inited) {
-              _initNew(members);
-              _inited = true;
+      body: PageBody(
+        child: membersAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(child: Text('Error: $e')),
+          data: (members) {
+            if (members.isEmpty) {
+              return const Center(child: Text('No members in this group.'));
             }
-            return _form(members);
-          }
-
-          final expensesAsync = ref.watch(expensesProvider(widget.groupId));
-          final splitsAsync =
-              ref.watch(expenseSplitsProvider(widget.expenseId!));
-          return expensesAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('Error: $e')),
-            data: (expenses) {
-              final existing = expenses
-                  .where((e) => e.id == widget.expenseId)
-                  .firstOrNull;
-              if (existing == null) {
-                return const Center(child: Text('Expense not found.'));
+            // New expense: seed defaults immediately. Editing: wait for the
+            // expense + its splits to load, then seed from them.
+            if (!widget.isEditing) {
+              if (!_inited) {
+                _initNew(members);
+                _inited = true;
               }
-              return splitsAsync.when(
-                loading: () =>
-                    const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text('Error: $e')),
-                data: (splits) {
-                  if (!_inited) {
-                    _initExisting(existing, splits);
-                    _inited = true;
-                  }
-                  return _form(members);
-                },
-              );
-            },
-          );
-        },
+              return _form(members);
+            }
+
+            final expensesAsync = ref.watch(expensesProvider(widget.groupId));
+            final splitsAsync =
+                ref.watch(expenseSplitsProvider(widget.expenseId!));
+            return expensesAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(child: Text('Error: $e')),
+              data: (expenses) {
+                final existing = expenses
+                    .where((e) => e.id == widget.expenseId)
+                    .firstOrNull;
+                if (existing == null) {
+                  return const Center(child: Text('Expense not found.'));
+                }
+                return splitsAsync.when(
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (e, _) => Center(child: Text('Error: $e')),
+                  data: (splits) {
+                    if (!_inited) {
+                      _initExisting(existing, splits);
+                      _inited = true;
+                    }
+                    return _form(members);
+                  },
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }

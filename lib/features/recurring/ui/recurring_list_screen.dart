@@ -1,4 +1,5 @@
 import 'package:exp_share/core/money.dart';
+import 'package:exp_share/core/widgets/page_body.dart';
 import 'package:exp_share/features/groups/providers/groups_provider.dart';
 import 'package:exp_share/features/recurring/data/recurring_repository.dart';
 import 'package:exp_share/features/recurring/providers/recurring_provider.dart';
@@ -30,21 +31,23 @@ class RecurringListScreen extends ConsumerWidget {
         icon: const Icon(Icons.add),
         label: const Text('New recurring'),
       ),
-      body: recurringAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
-        data: (items) => items.isEmpty
-            ? const _EmptyState()
-            : ListView.separated(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-                itemCount: items.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemBuilder: (_, i) => _RecurringCard(
-                  item: items[i],
-                  payerName: nameOf[items[i].payerMemberId] ?? 'Member',
-                  onChanged: () => ref.invalidate(recurringProvider(groupId)),
+      body: PageBody(
+        child: recurringAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(child: Text('Error: $e')),
+          data: (items) => items.isEmpty
+              ? const _EmptyState()
+              : ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+                  itemCount: items.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (_, i) => _RecurringCard(
+                    item: items[i],
+                    payerName: nameOf[items[i].payerMemberId] ?? 'Member',
+                    onChanged: () => ref.invalidate(recurringProvider(groupId)),
+                  ),
                 ),
-              ),
+        ),
       ),
     );
   }
