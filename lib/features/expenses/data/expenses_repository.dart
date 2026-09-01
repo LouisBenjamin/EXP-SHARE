@@ -1,3 +1,4 @@
+import 'package:decimal/decimal.dart';
 import 'package:exp_share/core/supabase_client.dart';
 import 'package:exp_share/models/expense.dart';
 
@@ -15,15 +16,18 @@ class ExpensesRepository {
         .toList();
   }
 
-  // Push 1: caller passes a single split (the payer, full amount).
-  // Push 2 replaces this with the full multi-member split logic.
+  // Creates an expense with its splits. [splits] must sum to [amount]
+  // (validated in the UI). Money is Decimal, sent as strings so numeric(12,2)
+  // precision survives the JSON round-trip.
   Future<void> createExpense({
     required String groupId,
     required String payerMemberId,
-    required double amount,
+    required Decimal amount,
     required String description,
     String splitType = 'equal',
-    required List<({String memberId, double shareAmount})> splits,
+    String? categoryId,
+    required List<({String memberId, Decimal shareAmount, Decimal? sharePercent})>
+        splits,
   }) async {
     final userId = supabase.auth.currentUser!.id;
 
@@ -33,15 +37,16 @@ class ExpensesRepository {
         .insert({
           'group_id': groupId,
           'payer_member_id': payerMemberId,
-          'amount': amount,
+          'amount': amount.toString(),
           'description': description,
           'split_type': splitType,
+          'category_id': categoryId,
           'created_by': userId,
         })
         .select('id')
         .single();
 
-    final expenseId = (expenseRow)['id'] as String;
+    final expenseId = expenseRow['id'] as String;
 
     // Insert all split rows atomically in one request.
     await supabase.from('expense_splits').insert(
@@ -49,7 +54,9 @@ class ExpensesRepository {
           .map((s) => {
                 'expense_id': expenseId,
                 'member_id': s.memberId,
-                'share_amount': s.shareAmount,
+                'share_amount': s.shareAmount.toString(),
+                if (s.sharePercent != null)
+                  'share_percent': s.sharePercent.toString(),
               })
           .toList(),
     );

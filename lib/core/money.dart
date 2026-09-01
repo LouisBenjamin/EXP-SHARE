@@ -13,6 +13,12 @@ String formatCurrency(Decimal amount, {String currency = 'CAD'}) {
   ).format(amount.toDouble());
 }
 
+// percent of amount, rounded half-up to whole cents. e.g. 12.5% of 100.01 -> 12.50
+Decimal percentShare(Decimal amount, Decimal percent) =>
+    (amount * percent / Decimal.fromInt(100))
+        .toDecimal(scaleOnInfinitePrecision: 10)
+        .round(scale: 2);
+
 // Equal split with penny-perfect rounding: first member absorbs any remainder.
 // Returns list of share amounts aligned 1-to-1 with [count] members.
 List<Decimal> splitEqually(Decimal total, int count) {
