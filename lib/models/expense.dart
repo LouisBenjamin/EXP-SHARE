@@ -1,6 +1,5 @@
-// Push 1: amount stored as double for simplicity.
-// Push 2 will migrate to package:decimal — change the type here and update
-// all callers (GroupsRepository, ExpensesRepository, add_expense_screen).
+import 'package:decimal/decimal.dart';
+
 class Expense {
   const Expense({
     required this.id,
@@ -19,7 +18,8 @@ class Expense {
   final String id;
   final String groupId;
   final String payerMemberId;
-  final double amount;
+  // Money is always Decimal in Dart / numeric(12,2) in Postgres — never double.
+  final Decimal amount;
   final String currency;
   final String? categoryId;
   final String description;
@@ -32,7 +32,9 @@ class Expense {
         id: json['id'] as String,
         groupId: json['group_id'] as String,
         payerMemberId: json['payer_member_id'] as String,
-        amount: (json['amount'] as num).toDouble(),
+        // numeric arrives as num or String depending on the driver; parse via
+        // string to preserve precision.
+        amount: Decimal.parse(json['amount'].toString()),
         currency: json['currency'] as String,
         categoryId: json['category_id'] as String?,
         description: json['description'] as String,
