@@ -3,7 +3,9 @@ import 'package:tally/models/expense.dart';
 import 'package:tally/models/expense_split.dart';
 import 'package:tally/models/group.dart';
 import 'package:tally/models/group_member.dart';
+import 'package:tally/models/import_result.dart';
 import 'package:tally/models/member_balance.dart';
+import 'package:tally/models/merchant_rule.dart';
 import 'package:tally/models/recurring_expense.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -161,6 +163,75 @@ void main() {
 
     test('unknown frequency defaults to months', () {
       expect(make('yearly', 1).cadence, 'Every month');
+    });
+  });
+
+  group('MerchantRule.fromJson', () {
+    test('parses a full row', () {
+      final rule = MerchantRule.fromJson({
+        'id': 'r1',
+        'group_id': 'g1',
+        'pattern': 'COSTCO WHOLESALE',
+        'match_type': 'contains',
+        'action': 'share',
+        'priority': 10,
+        'category_id': 'c1',
+      });
+      expect(rule.pattern, 'COSTCO WHOLESALE');
+      expect(rule.matchType, 'contains');
+      expect(rule.priority, 10);
+      expect(rule.categoryId, 'c1');
+      expect(rule.isSkip, isFalse);
+    });
+
+    test('a skip rule with no category', () {
+      final rule = MerchantRule.fromJson({
+        'id': 'r2',
+        'group_id': 'g1',
+        'pattern': 'SILVER GOBLIN',
+        'match_type': 'contains',
+        'action': 'skip',
+        'priority': 100,
+        'category_id': null,
+      });
+      expect(rule.isSkip, isTrue);
+      expect(rule.categoryId, isNull);
+    });
+
+    test('falls back to defaults on missing optional columns', () {
+      final rule = MerchantRule.fromJson({
+        'id': 'r3',
+        'group_id': 'g1',
+        'pattern': 'COSTCO',
+      });
+      expect(rule.matchType, 'contains');
+      expect(rule.action, 'share');
+      expect(rule.priority, 100);
+    });
+  });
+
+  group('ImportResult.fromJson', () {
+    test('parses the RPC payload', () {
+      final result = ImportResult.fromJson({
+        'inserted': 12,
+        'skipped': 3,
+        'skipped_fingerprints': ['aa', 'bb', 'cc'],
+      });
+      expect(result.inserted, 12);
+      expect(result.skipped, 3);
+      expect(result.skippedFingerprints, ['aa', 'bb', 'cc']);
+      expect(result.summary, 'Imported 12 · 3 already existed');
+    });
+
+    // Postgres renders an empty text[] as [], but be defensive about nulls.
+    test('handles an empty skip list', () {
+      final result = ImportResult.fromJson({
+        'inserted': 4,
+        'skipped': 0,
+        'skipped_fingerprints': <String>[],
+      });
+      expect(result.skippedFingerprints, isEmpty);
+      expect(result.summary, 'Imported 4');
     });
   });
 }
