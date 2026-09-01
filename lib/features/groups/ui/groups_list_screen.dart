@@ -1,8 +1,10 @@
+import 'package:tally/core/money.dart';
 import 'package:tally/core/widgets/page_body.dart';
 import 'package:tally/features/groups/data/groups_repository.dart';
 import 'package:tally/features/groups/providers/groups_provider.dart';
 import 'package:tally/features/groups/ui/create_group_dialog.dart';
-import 'package:tally/models/group.dart';
+import 'package:tally/models/group_summary.dart';
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,7 +14,7 @@ class GroupsListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final groupsAsync = ref.watch(groupsProvider);
+    final summariesAsync = ref.watch(groupSummariesProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -33,14 +35,17 @@ class GroupsListScreen extends ConsumerWidget {
         onPressed: () => showDialog(
           context: context,
           builder: (_) => CreateGroupDialog(
-            onCreated: () => ref.invalidate(groupsProvider),
+            onCreated: () {
+              ref.invalidate(groupsProvider);
+              ref.invalidate(groupSummariesProvider);
+            },
           ),
         ),
         icon: const Icon(Icons.add),
         label: const Text('New group'),
       ),
       body: PageBody(
-        child: groupsAsync.when(
+        child: summariesAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => Center(child: Text('Error: $e')),
           data: (groups) => groups.isEmpty
@@ -52,76 +57,144 @@ class GroupsListScreen extends ConsumerWidget {
   }
 }
 
-/// One column on a phone, up to three on a wide window, so the cards fill the
-/// space instead of stacking into a single skinny ribbon down the middle.
+/// Square tiles, as many per row as fit — a photo/initial fills the tile with
+/// the name and "who owes what" status line overlaid at the bottom.
 class _GroupsGrid extends StatelessWidget {
   const _GroupsGrid({required this.groups});
-  final List<Group> groups;
-
-  static const _padding = EdgeInsets.fromLTRB(16, 16, 16, 96);
-  static const _spacing = 12.0;
+  final List<GroupSummary> groups;
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // ~360px is about the narrowest a card still reads well at.
-        final columns = (constraints.maxWidth / 360).floor().clamp(1, 3);
-
-        // Phones take the original list untouched.
-        if (columns == 1) {
-          return ListView.separated(
-            padding: _padding,
-            itemCount: groups.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
-            itemBuilder: (_, i) => _GroupCard(group: groups[i]),
-          );
-        }
-
-        return GridView.builder(
-          padding: _padding,
-          itemCount: groups.length,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: columns,
-            crossAxisSpacing: _spacing,
-            mainAxisSpacing: _spacing,
-            // A fixed height beats an aspect ratio here: the card wraps a
-            // ListTile, which does not want to grow with the column width.
-            mainAxisExtent: 88,
-          ),
-          itemBuilder: (_, i) => _GroupCard(group: groups[i]),
-        );
-      },
+    return GridView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+      itemCount: groups.length,
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 200,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 1,
+      ),
+      itemBuilder: (_, i) => _GroupCard(summary: groups[i]),
     );
   }
 }
 
 class _GroupCard extends StatelessWidget {
-  const _GroupCard({required this.group});
-  final Group group;
+  const _GroupCard({required this.summary});
+  final GroupSummary summary;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final photoUrl = summary.photoUrl;
+
     return Card(
       clipBehavior: Clip.hardEdge,
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: theme.colorScheme.primaryContainer,
-          child: Text(
-            group.name.substring(0, 1).toUpperCase(),
-            style: TextStyle(color: theme.colorScheme.onPrimaryContainer),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: InkWell(
+        onTap: () => context.push('/groups/${summary.id}'),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (photoUrl != null)
+              Image.network(
+                photoUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _InitialTile(name: summary.name),
+              )
+            else
+              _InitialTile(name: summary.name),
+
+            // Scrim so the name/status stay legible over any photo.
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, Colors.black87],
+                  stops: [0.5, 1.0],
+                ),
+              ),
+            ),
+
+            Positioned(
+              left: 12,
+              right: 12,
+              bottom: 10,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    summary.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  _StatusLine(net: summary.myNet),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InitialTile extends StatelessWidget {
+  const _InitialTile({required this.name});
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return ColoredBox(
+      color: theme.colorScheme.primaryContainer,
+      child: Center(
+        child: Text(
+          name.isNotEmpty ? name.substring(0, 1).toUpperCase() : '?',
+          style: theme.textTheme.displayMedium?.copyWith(
+            color: theme.colorScheme.onPrimaryContainer,
+            fontWeight: FontWeight.bold,
           ),
         ),
-        title: Text(group.name, style: theme.textTheme.titleMedium),
-        subtitle: Text(
-          'Code: ${group.joinCode}',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () => context.push('/groups/${group.id}'),
+      ),
+    );
+  }
+}
+
+/// "You owe $X" / "You're owed $X" / "Settled up", colored to match.
+class _StatusLine extends StatelessWidget {
+  const _StatusLine({required this.net});
+  final Decimal net;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final String label;
+    final Color color;
+    if (net.compareTo(Decimal.zero) > 0) {
+      label = "You're owed ${formatCurrency(net)}";
+      color = Colors.greenAccent.shade400;
+    } else if (net.compareTo(Decimal.zero) < 0) {
+      label = 'You owe ${formatCurrency(-net)}';
+      color = Colors.redAccent.shade100;
+    } else {
+      label = 'Settled up';
+      color = Colors.white70;
+    }
+    return Text(
+      label,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: theme.textTheme.bodySmall?.copyWith(
+        color: color,
+        fontWeight: FontWeight.w600,
       ),
     );
   }
@@ -177,6 +250,7 @@ class _JoinGroupDialogState extends ConsumerState<JoinGroupDialog> {
     try {
       final group = await GroupsRepository().joinGroupByCode(code: code);
       ref.invalidate(groupsProvider);
+      ref.invalidate(groupSummariesProvider);
       if (mounted) {
         Navigator.of(context).pop();
         context.push('/groups/${group.id}');

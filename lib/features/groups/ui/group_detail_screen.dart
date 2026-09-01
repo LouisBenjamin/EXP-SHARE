@@ -75,6 +75,11 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
             icon: const Icon(Icons.bar_chart),
             onPressed: () => context.push('/groups/${widget.groupId}/insights'),
           ),
+          IconButton(
+            tooltip: 'Group settings',
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: () => context.push('/groups/${widget.groupId}/settings'),
+          ),
         ],
         bottom: TabBar(
           controller: _tab,
