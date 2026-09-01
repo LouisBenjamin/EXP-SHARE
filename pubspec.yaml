@@ -32,6 +32,10 @@ dependencies:
   # Bank statement import — RFC-4180 CSV parsing (quoted fields, CRLF)
   csv: ^6.0.0
 
+  # Statement file picking. Always read with withData: true and use .bytes —
+  # on web a picked file has no path, and the app has no dart:io anywhere.
+  file_picker: ^8.0.0
+
   # SHA-256 for the opaque transaction fingerprint. Promoted from a transitive
   # dep of supabase_flutter so it can be imported directly.
   crypto: ^3.0.0

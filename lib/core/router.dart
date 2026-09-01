@@ -5,6 +5,8 @@ import 'package:tally/features/groups/ui/group_detail_screen.dart';
 import 'package:tally/features/groups/ui/group_settings_screen.dart';
 import 'package:tally/features/groups/ui/groups_list_screen.dart';
 import 'package:tally/features/groups/ui/join_by_link_screen.dart';
+import 'package:tally/features/import/ui/import_screen.dart';
+import 'package:tally/features/import/ui/merchant_rules_screen.dart';
 import 'package:tally/features/insights/ui/insights_screen.dart';
 import 'package:tally/features/recurring/ui/add_recurring_screen.dart';
 import 'package:tally/features/recurring/ui/recurring_list_screen.dart';
@@ -82,6 +84,20 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'new',
                     builder: (_, state) => AddRecurringScreen(
+                      groupId: state.pathParameters['groupId']!,
+                    ),
+                  ),
+                ],
+              ),
+              GoRoute(
+                path: 'import',
+                builder: (_, state) => ImportScreen(
+                  groupId: state.pathParameters['groupId']!,
+                ),
+                routes: [
+                  GoRoute(
+                    path: 'rules',
+                    builder: (_, state) => MerchantRulesScreen(
                       groupId: state.pathParameters['groupId']!,
                     ),
                   ),

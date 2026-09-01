@@ -42,6 +42,12 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
     ref.invalidate(balancesProvider(widget.groupId));
   }
 
+  Future<void> _importStatement() async {
+    await context.push('/groups/${widget.groupId}/import');
+    ref.invalidate(expensesProvider(widget.groupId));
+    ref.invalidate(balancesProvider(widget.groupId));
+  }
+
   Future<void> _addGuest() async {
     await showDialog(
       context: context,
@@ -74,6 +80,11 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
             tooltip: 'Insights',
             icon: const Icon(Icons.bar_chart),
             onPressed: () => context.push('/groups/${widget.groupId}/insights'),
+          ),
+          IconButton(
+            tooltip: 'Import statement',
+            icon: const Icon(Icons.upload_file),
+            onPressed: _importStatement,
           ),
           IconButton(
             tooltip: 'Group settings',
