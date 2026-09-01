@@ -9,6 +9,8 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
     steps:
       - uses: actions/checkout@v4
@@ -27,7 +29,11 @@ jobs:
             --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} \
             --dart-define=REDIRECT_URL=${{ secrets.REDIRECT_URL }}
 
+      # Deploy only from main, and only once Cloudflare is configured. Until the
+      # CLOUDFLARE_API_TOKEN secret is set, the build above still runs on every
+      # push/PR (validating the app) and the job stays green instead of red.
       - name: Deploy to Cloudflare Pages
+        if: ${{ github.event_name == 'push' && env.CLOUDFLARE_API_TOKEN != '' }}
         uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
