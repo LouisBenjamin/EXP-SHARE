@@ -1,3 +1,4 @@
+import 'package:exp_share/core/widgets/page_body.dart';
 import 'package:exp_share/features/groups/data/groups_repository.dart';
 import 'package:exp_share/features/groups/providers/groups_provider.dart';
 import 'package:exp_share/features/groups/ui/create_group_dialog.dart';
@@ -38,18 +39,59 @@ class GroupsListScreen extends ConsumerWidget {
         icon: const Icon(Icons.add),
         label: const Text('New group'),
       ),
-      body: groupsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
-        data: (groups) => groups.isEmpty
-            ? const _EmptyState()
-            : ListView.separated(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-                itemCount: groups.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemBuilder: (_, i) => _GroupCard(group: groups[i]),
-              ),
+      body: PageBody(
+        child: groupsAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(child: Text('Error: $e')),
+          data: (groups) => groups.isEmpty
+              ? const _EmptyState()
+              : _GroupsGrid(groups: groups),
+        ),
       ),
+    );
+  }
+}
+
+/// One column on a phone, up to three on a wide window, so the cards fill the
+/// space instead of stacking into a single skinny ribbon down the middle.
+class _GroupsGrid extends StatelessWidget {
+  const _GroupsGrid({required this.groups});
+  final List<Group> groups;
+
+  static const _padding = EdgeInsets.fromLTRB(16, 16, 16, 96);
+  static const _spacing = 12.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // ~360px is about the narrowest a card still reads well at.
+        final columns = (constraints.maxWidth / 360).floor().clamp(1, 3);
+
+        // Phones take the original list untouched.
+        if (columns == 1) {
+          return ListView.separated(
+            padding: _padding,
+            itemCount: groups.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (_, i) => _GroupCard(group: groups[i]),
+          );
+        }
+
+        return GridView.builder(
+          padding: _padding,
+          itemCount: groups.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            crossAxisSpacing: _spacing,
+            mainAxisSpacing: _spacing,
+            // A fixed height beats an aspect ratio here: the card wraps a
+            // ListTile, which does not want to grow with the column width.
+            mainAxisExtent: 88,
+          ),
+          itemBuilder: (_, i) => _GroupCard(group: groups[i]),
+        );
+      },
     );
   }
 }

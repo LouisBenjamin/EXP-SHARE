@@ -1,5 +1,6 @@
 import 'package:exp_share/core/money.dart';
 import 'package:exp_share/core/supabase_client.dart';
+import 'package:exp_share/core/widgets/page_body.dart';
 import 'package:exp_share/features/balances/providers/balances_provider.dart';
 import 'package:exp_share/features/balances/ui/balances_tab.dart';
 import 'package:exp_share/features/expenses/data/expenses_repository.dart';
@@ -97,13 +98,15 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
           ),
         _ => null,
       },
-      body: TabBarView(
-        controller: _tab,
-        children: [
-          _ExpensesTab(groupId: widget.groupId),
-          BalancesTab(groupId: widget.groupId),
-          _MembersTab(groupId: widget.groupId),
-        ],
+      body: PageBody(
+        child: TabBarView(
+          controller: _tab,
+          children: [
+            _ExpensesTab(groupId: widget.groupId),
+            BalancesTab(groupId: widget.groupId),
+            _MembersTab(groupId: widget.groupId),
+          ],
+        ),
       ),
     );
   }
