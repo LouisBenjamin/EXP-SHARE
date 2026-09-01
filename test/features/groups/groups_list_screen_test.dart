@@ -1,7 +1,7 @@
-import 'package:exp_share/core/theme.dart';
-import 'package:exp_share/features/groups/providers/groups_provider.dart';
-import 'package:exp_share/features/groups/ui/groups_list_screen.dart';
-import 'package:exp_share/models/group.dart';
+import 'package:tally/core/theme.dart';
+import 'package:tally/features/groups/providers/groups_provider.dart';
+import 'package:tally/features/groups/ui/groups_list_screen.dart';
+import 'package:tally/models/group.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';

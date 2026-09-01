@@ -1,4 +1,4 @@
--- EXP-SHARE — Push 2: member management RPCs
+-- TALLY — Push 2: member management RPCs
 --
 -- 0001's group_members RLS only lets a creator add their own initial row. Adding
 -- more real members (join by code) or guests needs SECURITY DEFINER functions

@@ -1,4 +1,4 @@
-import 'package:exp_share/features/groups/data/groups_repository.dart';
+import 'package:tally/features/groups/data/groups_repository.dart';
 import 'package:flutter/material.dart';
 
 class CreateGroupDialog extends StatefulWidget {

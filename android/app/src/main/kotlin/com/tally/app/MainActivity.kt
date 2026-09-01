@@ -1,4 +1,4 @@
-package com.expshare.exp_share
+package com.tally.app
 
 import io.flutter.embedding.android.FlutterActivity
 

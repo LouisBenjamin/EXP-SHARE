@@ -1,8 +1,8 @@
-import 'package:exp_share/core/widgets/page_body.dart';
-import 'package:exp_share/features/groups/data/groups_repository.dart';
-import 'package:exp_share/features/groups/providers/groups_provider.dart';
-import 'package:exp_share/features/groups/ui/create_group_dialog.dart';
-import 'package:exp_share/models/group.dart';
+import 'package:tally/core/widgets/page_body.dart';
+import 'package:tally/features/groups/data/groups_repository.dart';
+import 'package:tally/features/groups/providers/groups_provider.dart';
+import 'package:tally/features/groups/ui/create_group_dialog.dart';
+import 'package:tally/models/group.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';

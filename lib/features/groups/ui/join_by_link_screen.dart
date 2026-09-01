@@ -1,5 +1,5 @@
-import 'package:exp_share/features/groups/data/groups_repository.dart';
-import 'package:exp_share/features/groups/providers/groups_provider.dart';
+import 'package:tally/features/groups/data/groups_repository.dart';
+import 'package:tally/features/groups/providers/groups_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';

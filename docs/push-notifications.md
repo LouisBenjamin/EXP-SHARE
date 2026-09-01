@@ -15,7 +15,7 @@ they're documented here rather than half-wired (adding Firebase to Android witho
 
 ### 1. Create a Firebase project
 - console.firebase.google.com → add project.
-- Add an **Android app** with package name **`com.expshare.exp_share`** → download
+- Add an **Android app** with package name **`com.tally.app`** → download
   `google-services.json` → place in `android/app/`.
 - (Web push) Add a **Web app** → copy the config + generate a **Web Push (VAPID) key**.
 

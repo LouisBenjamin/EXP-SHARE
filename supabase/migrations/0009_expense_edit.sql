@@ -1,4 +1,4 @@
--- EXP-SHARE — edit + delete expenses
+-- TALLY — edit + delete expenses
 --
 -- Both operations go through SECURITY DEFINER RPCs rather than direct table
 -- writes. Two reasons:
@@ -12,7 +12,7 @@
 --      (deleted_at is null), and Postgres won't let a member update a row into a
 --      state they can no longer see. A SECURITY DEFINER function sidesteps that.
 --
--- Authorization: EXP-SHARE is a shared ledger, so any *member* of the group can
+-- Authorization: TALLY is a shared ledger, so any *member* of the group can
 -- edit or delete an expense, not just whoever created it. Both RPCs check
 -- is_group_member(). The old creator-only update policy is therefore dropped.
 

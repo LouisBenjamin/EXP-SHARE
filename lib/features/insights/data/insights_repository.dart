@@ -1,5 +1,5 @@
 import 'package:decimal/decimal.dart';
-import 'package:exp_share/core/supabase_client.dart';
+import 'package:tally/core/supabase_client.dart';
 
 class CategorySpend {
   const CategorySpend({

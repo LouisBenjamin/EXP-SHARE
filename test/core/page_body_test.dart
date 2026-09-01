@@ -1,4 +1,4 @@
-import 'package:exp_share/core/widgets/page_body.dart';
+import 'package:tally/core/widgets/page_body.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

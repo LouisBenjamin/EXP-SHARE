@@ -1,5 +1,5 @@
 import 'package:decimal/decimal.dart';
-import 'package:exp_share/core/money.dart';
+import 'package:tally/core/money.dart';
 
 // One participant's share of an expense (or recurring template).
 // sharePercent is only set for the 'percent' split type.

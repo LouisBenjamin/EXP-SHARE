@@ -1,6 +1,6 @@
 import 'package:decimal/decimal.dart';
-import 'package:exp_share/features/balances/logic/settle.dart';
-import 'package:exp_share/models/member_balance.dart';
+import 'package:tally/features/balances/logic/settle.dart';
+import 'package:tally/models/member_balance.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Decimal d(String s) => Decimal.parse(s);

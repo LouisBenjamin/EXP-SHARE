@@ -1,6 +1,6 @@
 {
-    "name": "exp_share",
-    "short_name": "exp_share",
+    "name": "Tally",
+    "short_name": "Tally",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

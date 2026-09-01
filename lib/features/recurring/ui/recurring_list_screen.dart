@@ -1,10 +1,10 @@
-import 'package:exp_share/core/money.dart';
-import 'package:exp_share/core/widgets/page_body.dart';
-import 'package:exp_share/features/groups/providers/groups_provider.dart';
-import 'package:exp_share/features/recurring/data/recurring_repository.dart';
-import 'package:exp_share/features/recurring/providers/recurring_provider.dart';
-import 'package:exp_share/models/group_member.dart';
-import 'package:exp_share/models/recurring_expense.dart';
+import 'package:tally/core/money.dart';
+import 'package:tally/core/widgets/page_body.dart';
+import 'package:tally/features/groups/providers/groups_provider.dart';
+import 'package:tally/features/recurring/data/recurring_repository.dart';
+import 'package:tally/features/recurring/providers/recurring_provider.dart';
+import 'package:tally/models/group_member.dart';
+import 'package:tally/models/recurring_expense.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';

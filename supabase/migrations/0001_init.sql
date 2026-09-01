@@ -1,4 +1,4 @@
--- EXP-SHARE — initial schema
+-- TALLY — initial schema
 -- Run this in the Supabase SQL Editor (or via `supabase db push`)
 
 create extension if not exists "pgcrypto";

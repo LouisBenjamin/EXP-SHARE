@@ -1,4 +1,4 @@
--- EXP-SHARE — Push 5: enable Realtime on the tables the app watches.
+-- TALLY — Push 5: enable Realtime on the tables the app watches.
 --
 -- Adds tables to the supabase_realtime publication so Postgres change events are
 -- streamed to subscribed clients. RLS still applies to what each client sees, and

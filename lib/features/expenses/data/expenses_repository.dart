@@ -1,8 +1,8 @@
 import 'package:decimal/decimal.dart';
-import 'package:exp_share/core/supabase_client.dart';
-import 'package:exp_share/features/expenses/split_logic.dart';
-import 'package:exp_share/models/expense.dart';
-import 'package:exp_share/models/expense_split.dart';
+import 'package:tally/core/supabase_client.dart';
+import 'package:tally/features/expenses/split_logic.dart';
+import 'package:tally/models/expense.dart';
+import 'package:tally/models/expense_split.dart';
 
 class ExpensesRepository {
   Future<List<Expense>> fetchExpenses({required String groupId}) async {

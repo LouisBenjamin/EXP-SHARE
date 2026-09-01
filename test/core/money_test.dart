@@ -1,5 +1,5 @@
 import 'package:decimal/decimal.dart';
-import 'package:exp_share/core/money.dart';
+import 'package:tally/core/money.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Decimal d(String s) => Decimal.parse(s);

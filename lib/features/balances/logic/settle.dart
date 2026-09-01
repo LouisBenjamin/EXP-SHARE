@@ -1,5 +1,5 @@
 import 'package:decimal/decimal.dart';
-import 'package:exp_share/models/member_balance.dart';
+import 'package:tally/models/member_balance.dart';
 
 // A suggested payment to move the group toward settled.
 class DebtTransfer {

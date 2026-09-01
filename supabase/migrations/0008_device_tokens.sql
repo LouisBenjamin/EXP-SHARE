@@ -1,4 +1,4 @@
--- EXP-SHARE — Push 5: device tokens for push notifications (groundwork).
+-- TALLY — Push 5: device tokens for push notifications (groundwork).
 --
 -- Stores each user's push registration token(s). Provider-agnostic: the token is
 -- an FCM registration token today, but the schema doesn't assume FCM. The app

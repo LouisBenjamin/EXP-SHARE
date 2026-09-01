@@ -34,7 +34,7 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: exp-share-apk
+          name: tally-apk
           path: build/app/outputs/flutter-apk/app-release.apk
 
       # On tag pushes, also attach the APK to the GitHub Release.

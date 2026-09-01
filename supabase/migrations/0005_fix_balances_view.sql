@@ -1,4 +1,4 @@
--- EXP-SHARE — Push 3: fix settlement signs in group_balances
+-- TALLY — Push 3: fix settlement signs in group_balances
 --
 -- net should be: paid - owed, adjusted by settlements. When a member RECEIVES a
 -- settlement (to_member) they are owed less -> subtract it; when they PAY a

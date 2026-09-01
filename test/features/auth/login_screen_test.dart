@@ -1,5 +1,5 @@
-import 'package:exp_share/core/theme.dart';
-import 'package:exp_share/features/auth/ui/login_screen.dart';
+import 'package:tally/core/theme.dart';
+import 'package:tally/features/auth/ui/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -17,7 +17,7 @@ void main() {
   testWidgets('email step renders the branding and the send button',
       (tester) async {
     await pump(tester, const Size(1200, 900));
-    expect(find.text('EXP Share'), findsOneWidget);
+    expect(find.text('Tally'), findsOneWidget);
     expect(find.text('Split expenses simply.'), findsOneWidget);
     expect(find.byType(TextField), findsOneWidget);
     expect(find.text('Email address'), findsOneWidget); // the field's label
@@ -48,7 +48,7 @@ void main() {
     final box = tester.widget<ConstrainedBox>(
       find
           .ancestor(
-            of: find.text('EXP Share'),
+            of: find.text('Tally'),
             matching: find.byType(ConstrainedBox),
           )
           .first,

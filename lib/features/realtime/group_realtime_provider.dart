@@ -1,7 +1,7 @@
-import 'package:exp_share/core/supabase_client.dart';
-import 'package:exp_share/features/balances/providers/balances_provider.dart';
-import 'package:exp_share/features/expenses/providers/expenses_provider.dart';
-import 'package:exp_share/features/groups/providers/groups_provider.dart';
+import 'package:tally/core/supabase_client.dart';
+import 'package:tally/features/balances/providers/balances_provider.dart';
+import 'package:tally/features/expenses/providers/expenses_provider.dart';
+import 'package:tally/features/groups/providers/groups_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 

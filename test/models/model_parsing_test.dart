@@ -1,10 +1,10 @@
 import 'package:decimal/decimal.dart';
-import 'package:exp_share/models/expense.dart';
-import 'package:exp_share/models/expense_split.dart';
-import 'package:exp_share/models/group.dart';
-import 'package:exp_share/models/group_member.dart';
-import 'package:exp_share/models/member_balance.dart';
-import 'package:exp_share/models/recurring_expense.dart';
+import 'package:tally/models/expense.dart';
+import 'package:tally/models/expense_split.dart';
+import 'package:tally/models/group.dart';
+import 'package:tally/models/group_member.dart';
+import 'package:tally/models/member_balance.dart';
+import 'package:tally/models/recurring_expense.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

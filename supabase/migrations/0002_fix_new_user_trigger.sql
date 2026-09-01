@@ -1,4 +1,4 @@
--- EXP-SHARE — fix broken handle_new_user trigger
+-- TALLY — fix broken handle_new_user trigger
 --
 -- The 0001 version was `security definer` without a search_path, so when the
 -- trigger fired from the auth role it couldn't resolve `profiles`, failing every

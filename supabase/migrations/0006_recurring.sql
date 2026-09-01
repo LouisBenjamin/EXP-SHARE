@@ -1,4 +1,4 @@
--- EXP-SHARE — Push 4: recurring expenses
+-- TALLY — Push 4: recurring expenses
 --
 -- A recurring_expenses row is a template; a daily tick materializes due
 -- templates into real expenses (+ splits) and advances next_occurrence.
