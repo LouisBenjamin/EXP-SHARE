@@ -1,8 +1,9 @@
 import 'package:decimal/decimal.dart';
-import 'package:exp_share/core/money.dart';
-import 'package:exp_share/features/expenses/providers/categories_provider.dart';
-import 'package:exp_share/features/insights/data/insights_repository.dart';
-import 'package:exp_share/features/insights/providers/insights_provider.dart';
+import 'package:tally/core/money.dart';
+import 'package:tally/core/widgets/page_body.dart';
+import 'package:tally/features/expenses/providers/categories_provider.dart';
+import 'package:tally/features/insights/data/insights_repository.dart';
+import 'package:tally/features/insights/providers/insights_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -19,34 +20,36 @@ class InsightsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Insights')),
-      body: spendAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
-        data: (spend) {
-          if (spend.isEmpty) {
-            return Center(
-              child: Text('No spending in $monthLabel yet',
-                  style: theme.textTheme.titleMedium),
-            );
-          }
-          final total = spend.fold(Decimal.zero, (s, c) => s + c.total);
-          return ListView(
-            padding: const EdgeInsets.all(24),
-            children: [
-              Text(monthLabel, style: theme.textTheme.titleSmall),
-              const SizedBox(height: 4),
-              Text(
-                formatCurrency(total),
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.primary,
+      body: PageBody(
+        child: spendAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(child: Text('Error: $e')),
+          data: (spend) {
+            if (spend.isEmpty) {
+              return Center(
+                child: Text('No spending in $monthLabel yet',
+                    style: theme.textTheme.titleMedium),
+              );
+            }
+            final total = spend.fold(Decimal.zero, (s, c) => s + c.total);
+            return ListView(
+              padding: const EdgeInsets.all(24),
+              children: [
+                Text(monthLabel, style: theme.textTheme.titleSmall),
+                const SizedBox(height: 4),
+                Text(
+                  formatCurrency(total),
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              ...spend.map((c) => _CategoryBar(spend: c, total: total)),
-            ],
-          );
-        },
+                const SizedBox(height: 24),
+                ...spend.map((c) => _CategoryBar(spend: c, total: total)),
+              ],
+            );
+          },
+        ),
       ),
     );
   }

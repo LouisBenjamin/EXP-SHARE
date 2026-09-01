@@ -1,4 +1,4 @@
-# EXP Share
+# Tally
 
 A free, cross-platform expense-splitting app built with Flutter and Supabase. Think Splitwise — no subscriptions, no ads, self-owned data.
 

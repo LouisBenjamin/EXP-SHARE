@@ -1,4 +1,4 @@
-import 'package:exp_share/core/env.dart';
+import 'package:tally/core/env.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 export 'package:supabase_flutter/supabase_flutter.dart' show SupabaseClient;

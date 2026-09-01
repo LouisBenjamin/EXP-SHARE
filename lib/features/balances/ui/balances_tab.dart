@@ -1,11 +1,11 @@
 import 'package:decimal/decimal.dart';
-import 'package:exp_share/core/money.dart';
-import 'package:exp_share/features/balances/data/balances_repository.dart';
-import 'package:exp_share/features/balances/logic/settle.dart';
-import 'package:exp_share/features/balances/providers/balances_provider.dart';
-import 'package:exp_share/features/expenses/providers/expenses_provider.dart';
-import 'package:exp_share/features/groups/providers/groups_provider.dart';
-import 'package:exp_share/models/group_member.dart';
+import 'package:tally/core/money.dart';
+import 'package:tally/features/balances/data/balances_repository.dart';
+import 'package:tally/features/balances/logic/settle.dart';
+import 'package:tally/features/balances/providers/balances_provider.dart';
+import 'package:tally/features/expenses/providers/expenses_provider.dart';
+import 'package:tally/features/groups/providers/groups_provider.dart';
+import 'package:tally/models/group_member.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

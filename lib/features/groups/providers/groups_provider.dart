@@ -1,6 +1,6 @@
-import 'package:exp_share/features/groups/data/groups_repository.dart';
-import 'package:exp_share/models/group.dart';
-import 'package:exp_share/models/group_member.dart';
+import 'package:tally/features/groups/data/groups_repository.dart';
+import 'package:tally/models/group.dart';
+import 'package:tally/models/group_member.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // All groups for the current user.

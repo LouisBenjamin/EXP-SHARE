@@ -1,5 +1,5 @@
-import 'package:exp_share/features/expenses/data/categories_repository.dart';
-import 'package:exp_share/models/category.dart';
+import 'package:tally/features/expenses/data/categories_repository.dart';
+import 'package:tally/models/category.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

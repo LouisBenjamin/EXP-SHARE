@@ -1,6 +1,6 @@
 import 'package:decimal/decimal.dart';
-import 'package:exp_share/core/money.dart';
-import 'package:exp_share/models/group_member.dart';
+import 'package:tally/core/money.dart';
+import 'package:tally/models/group_member.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 

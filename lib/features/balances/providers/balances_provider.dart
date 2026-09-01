@@ -1,5 +1,5 @@
-import 'package:exp_share/features/balances/data/balances_repository.dart';
-import 'package:exp_share/models/member_balance.dart';
+import 'package:tally/features/balances/data/balances_repository.dart';
+import 'package:tally/models/member_balance.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // Net balance per member for a group.

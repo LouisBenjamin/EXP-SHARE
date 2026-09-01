@@ -1,4 +1,4 @@
--- EXP-SHARE — let a group creator read groups they own.
+-- TALLY — let a group creator read groups they own.
 --
 -- createGroup() does `insert ... returning` (Supabase .insert().select()).
 -- Postgres runs the SELECT policy against the RETURNING row, but at that moment

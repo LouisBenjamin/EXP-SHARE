@@ -1,5 +1,5 @@
-import 'package:exp_share/core/supabase_client.dart';
-import 'package:exp_share/models/category.dart';
+import 'package:tally/core/supabase_client.dart';
+import 'package:tally/models/category.dart';
 
 class CategoriesRepository {
   // Global default categories plus any this group has defined.

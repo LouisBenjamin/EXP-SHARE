@@ -1,6 +1,6 @@
-import 'package:exp_share/core/supabase_client.dart';
-import 'package:exp_share/models/group.dart';
-import 'package:exp_share/models/group_member.dart';
+import 'package:tally/core/supabase_client.dart';
+import 'package:tally/models/group.dart';
+import 'package:tally/models/group_member.dart';
 
 class GroupsRepository {
   Future<List<Group>> fetchGroups() async {

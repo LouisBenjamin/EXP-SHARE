@@ -1,5 +1,5 @@
-import 'package:exp_share/core/supabase_client.dart';
-import 'package:exp_share/models/member_balance.dart';
+import 'package:tally/core/supabase_client.dart';
+import 'package:tally/models/member_balance.dart';
 
 class BalancesRepository {
   // Net balance per member from the group_balances view (RLS-scoped).

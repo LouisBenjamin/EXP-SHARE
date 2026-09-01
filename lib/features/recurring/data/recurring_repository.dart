@@ -1,7 +1,7 @@
 import 'package:decimal/decimal.dart';
-import 'package:exp_share/core/supabase_client.dart';
-import 'package:exp_share/features/expenses/split_logic.dart';
-import 'package:exp_share/models/recurring_expense.dart';
+import 'package:tally/core/supabase_client.dart';
+import 'package:tally/features/expenses/split_logic.dart';
+import 'package:tally/models/recurring_expense.dart';
 
 class RecurringRepository {
   Future<List<RecurringExpense>> fetchRecurring({required String groupId}) async {

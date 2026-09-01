@@ -1,14 +1,15 @@
-import 'package:exp_share/core/money.dart';
-import 'package:exp_share/core/supabase_client.dart';
-import 'package:exp_share/features/balances/providers/balances_provider.dart';
-import 'package:exp_share/features/balances/ui/balances_tab.dart';
-import 'package:exp_share/features/expenses/data/expenses_repository.dart';
-import 'package:exp_share/features/expenses/providers/expenses_provider.dart';
-import 'package:exp_share/features/groups/data/groups_repository.dart';
-import 'package:exp_share/features/groups/providers/groups_provider.dart';
-import 'package:exp_share/features/realtime/group_realtime_provider.dart';
-import 'package:exp_share/models/expense.dart';
-import 'package:exp_share/models/group_member.dart';
+import 'package:tally/core/money.dart';
+import 'package:tally/core/supabase_client.dart';
+import 'package:tally/core/widgets/page_body.dart';
+import 'package:tally/features/balances/providers/balances_provider.dart';
+import 'package:tally/features/balances/ui/balances_tab.dart';
+import 'package:tally/features/expenses/data/expenses_repository.dart';
+import 'package:tally/features/expenses/providers/expenses_provider.dart';
+import 'package:tally/features/groups/data/groups_repository.dart';
+import 'package:tally/features/groups/providers/groups_provider.dart';
+import 'package:tally/features/realtime/group_realtime_provider.dart';
+import 'package:tally/models/expense.dart';
+import 'package:tally/models/group_member.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -97,13 +98,15 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
           ),
         _ => null,
       },
-      body: TabBarView(
-        controller: _tab,
-        children: [
-          _ExpensesTab(groupId: widget.groupId),
-          BalancesTab(groupId: widget.groupId),
-          _MembersTab(groupId: widget.groupId),
-        ],
+      body: PageBody(
+        child: TabBarView(
+          controller: _tab,
+          children: [
+            _ExpensesTab(groupId: widget.groupId),
+            BalancesTab(groupId: widget.groupId),
+            _MembersTab(groupId: widget.groupId),
+          ],
+        ),
       ),
     );
   }
@@ -341,7 +344,7 @@ class _JoinCodeCard extends StatelessWidget {
                 // screen; elsewhere there's no meaningful URL, so share the code.
                 final text = kIsWeb
                     ? _inviteLink(code)
-                    : 'Join my group on EXP-SHARE with code $code';
+                    : 'Join my group on Tally with code $code';
                 Clipboard.setData(ClipboardData(text: text));
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(

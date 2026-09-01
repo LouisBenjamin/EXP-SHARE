@@ -1,9 +1,10 @@
-import 'package:exp_share/core/money.dart';
-import 'package:exp_share/features/groups/providers/groups_provider.dart';
-import 'package:exp_share/features/recurring/data/recurring_repository.dart';
-import 'package:exp_share/features/recurring/providers/recurring_provider.dart';
-import 'package:exp_share/models/group_member.dart';
-import 'package:exp_share/models/recurring_expense.dart';
+import 'package:tally/core/money.dart';
+import 'package:tally/core/widgets/page_body.dart';
+import 'package:tally/features/groups/providers/groups_provider.dart';
+import 'package:tally/features/recurring/data/recurring_repository.dart';
+import 'package:tally/features/recurring/providers/recurring_provider.dart';
+import 'package:tally/models/group_member.dart';
+import 'package:tally/models/recurring_expense.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -30,21 +31,23 @@ class RecurringListScreen extends ConsumerWidget {
         icon: const Icon(Icons.add),
         label: const Text('New recurring'),
       ),
-      body: recurringAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
-        data: (items) => items.isEmpty
-            ? const _EmptyState()
-            : ListView.separated(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-                itemCount: items.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemBuilder: (_, i) => _RecurringCard(
-                  item: items[i],
-                  payerName: nameOf[items[i].payerMemberId] ?? 'Member',
-                  onChanged: () => ref.invalidate(recurringProvider(groupId)),
+      body: PageBody(
+        child: recurringAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(child: Text('Error: $e')),
+          data: (items) => items.isEmpty
+              ? const _EmptyState()
+              : ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+                  itemCount: items.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (_, i) => _RecurringCard(
+                    item: items[i],
+                    payerName: nameOf[items[i].payerMemberId] ?? 'Member',
+                    onChanged: () => ref.invalidate(recurringProvider(groupId)),
+                  ),
                 ),
-              ),
+        ),
       ),
     );
   }

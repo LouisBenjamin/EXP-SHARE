@@ -1,4 +1,4 @@
-import 'package:exp_share/features/insights/data/insights_repository.dart';
+import 'package:tally/features/insights/data/insights_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // Current-month spend per category for a group.
