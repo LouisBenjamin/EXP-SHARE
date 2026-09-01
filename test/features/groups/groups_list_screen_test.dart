@@ -1,23 +1,25 @@
 import 'package:tally/core/theme.dart';
 import 'package:tally/features/groups/providers/groups_provider.dart';
 import 'package:tally/features/groups/ui/groups_list_screen.dart';
-import 'package:tally/models/group.dart';
+import 'package:tally/models/group_summary.dart';
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-Group g(String id, String name) => Group(
+GroupSummary s(String id, String name, {String net = '0'}) => GroupSummary(
       id: id,
       name: name,
       joinCode: 'CODE$id',
-      createdBy: 'u1',
-      createdAt: DateTime(2026, 8, 1),
+      photoUrl: null, // avoid Image.network in widget tests
+      myMemberId: 'm$id',
+      myNet: Decimal.parse(net),
     );
 
 Future<void> pumpAt(
   WidgetTester tester,
   Size size, {
-  required List<Group> groups,
+  required List<GroupSummary> groups,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
@@ -26,7 +28,7 @@ Future<void> pumpAt(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        groupsProvider.overrideWith((ref) async => groups),
+        groupSummariesProvider.overrideWith((ref) async => groups),
       ],
       child: MaterialApp(
         theme: AppTheme.light,
@@ -37,30 +39,15 @@ Future<void> pumpAt(
   await tester.pumpAndSettle();
 }
 
-int? gridColumns(WidgetTester tester) {
-  final grid = tester.widget<GridView>(find.byType(GridView));
-  final delegate = grid.gridDelegate as SliverGridDelegateWithFixedCrossAxisCount;
-  return delegate.crossAxisCount;
-}
-
 void main() {
-  final groups = [for (var i = 0; i < 6; i++) g('$i', 'Group $i')];
+  final groups = [for (var i = 0; i < 6; i++) s('$i', 'Group $i')];
 
-  testWidgets('phone width renders the plain ListView, no grid', (tester) async {
+  testWidgets('groups render as a square-tile grid', (tester) async {
     await pumpAt(tester, const Size(375, 900), groups: groups);
-    expect(find.byType(GridView), findsNothing);
-    expect(find.byType(ListView), findsOneWidget);
-  });
-
-  testWidgets('tablet width switches to a 2-column grid', (tester) async {
-    await pumpAt(tester, const Size(800, 1000), groups: groups);
-    expect(gridColumns(tester), 2);
-  });
-
-  testWidgets('wide desktop caps the grid at 3 columns', (tester) async {
-    await pumpAt(tester, const Size(1920, 1080), groups: groups);
-    // content is capped at 1100px by PageBody -> 1100/360 = 3
-    expect(gridColumns(tester), 3);
+    final grid = tester.widget<GridView>(find.byType(GridView));
+    final delegate =
+        grid.gridDelegate as SliverGridDelegateWithMaxCrossAxisExtent;
+    expect(delegate.childAspectRatio, 1);
   });
 
   testWidgets('empty state shown when there are no groups', (tester) async {
@@ -73,5 +60,20 @@ void main() {
     await pumpAt(tester, const Size(1200, 2000), groups: groups);
     expect(find.text('Group 0'), findsOneWidget);
     expect(find.text('Group 5'), findsOneWidget);
+  });
+
+  testWidgets('status line reflects who owes what', (tester) async {
+    await pumpAt(
+      tester,
+      const Size(1200, 2000),
+      groups: [
+        s('a', 'Owed to me', net: '25.00'),
+        s('b', 'I owe', net: '-10.50'),
+        s('c', 'Even', net: '0'),
+      ],
+    );
+    expect(find.textContaining("You're owed"), findsOneWidget);
+    expect(find.textContaining('You owe'), findsOneWidget);
+    expect(find.text('Settled up'), findsOneWidget);
   });
 }

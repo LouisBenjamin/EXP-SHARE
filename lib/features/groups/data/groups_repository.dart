@@ -1,6 +1,10 @@
+import 'dart:typed_data';
+
 import 'package:tally/core/supabase_client.dart';
 import 'package:tally/models/group.dart';
 import 'package:tally/models/group_member.dart';
+import 'package:tally/models/group_summary.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show FileOptions;
 
 class GroupsRepository {
   Future<List<Group>> fetchGroups() async {
@@ -9,6 +13,41 @@ class GroupsRepository {
         .select()
         .order('created_at', ascending: false);
     return (data as List).map((e) => Group.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  // Groups the caller belongs to, each with their own net balance attached —
+  // used by the groups list so cards can show a "you owe / you're owed"
+  // status line without fetching balances per group.
+  Future<List<GroupSummary>> fetchGroupSummaries() async {
+    final data = await supabase.from('my_group_summaries').select();
+    return (data as List)
+        .map((e) => GroupSummary.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  // Uploads [bytes] as the group's photo and returns the new public URL.
+  // Any member may set the group photo (storage RLS + update_group_photo
+  // both check membership, not ownership).
+  Future<String> uploadGroupPhoto({
+    required String groupId,
+    required Uint8List bytes,
+    required String fileExt,
+  }) async {
+    final path = '$groupId/photo.$fileExt';
+    await supabase.storage.from('group-photos').uploadBinary(
+          path,
+          bytes,
+          fileOptions: const FileOptions(upsert: true),
+        );
+    // Cache-bust: same path every time, so the URL alone won't change after
+    // a re-upload and a cached image would stick around.
+    final baseUrl = supabase.storage.from('group-photos').getPublicUrl(path);
+    final url = '$baseUrl?t=${DateTime.now().millisecondsSinceEpoch}';
+    await supabase.rpc('update_group_photo', params: {
+      'p_group_id': groupId,
+      'p_photo_url': url,
+    });
+    return url;
   }
 
   Future<Group> fetchGroup({required String id}) async {

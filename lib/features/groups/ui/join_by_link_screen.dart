@@ -33,6 +33,7 @@ class _JoinByLinkScreenState extends ConsumerState<JoinByLinkScreen> {
     try {
       final group = await GroupsRepository().joinGroupByCode(code: code);
       ref.invalidate(groupsProvider);
+      ref.invalidate(groupSummariesProvider);
       if (mounted) context.go('/groups/${group.id}');
     } on Exception catch (e) {
       if (mounted) setState(() => _error = e.toString());

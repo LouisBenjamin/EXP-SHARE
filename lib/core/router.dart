@@ -2,6 +2,7 @@ import 'package:tally/core/supabase_client.dart';
 import 'package:tally/features/auth/ui/login_screen.dart';
 import 'package:tally/features/expenses/ui/add_expense_screen.dart';
 import 'package:tally/features/groups/ui/group_detail_screen.dart';
+import 'package:tally/features/groups/ui/group_settings_screen.dart';
 import 'package:tally/features/groups/ui/groups_list_screen.dart';
 import 'package:tally/features/groups/ui/join_by_link_screen.dart';
 import 'package:tally/features/insights/ui/insights_screen.dart';
@@ -63,6 +64,12 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'insights',
                 builder: (_, state) => InsightsScreen(
+                  groupId: state.pathParameters['groupId']!,
+                ),
+              ),
+              GoRoute(
+                path: 'settings',
+                builder: (_, state) => GroupSettingsScreen(
                   groupId: state.pathParameters['groupId']!,
                 ),
               ),
