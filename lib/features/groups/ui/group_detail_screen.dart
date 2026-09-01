@@ -5,6 +5,7 @@ import 'package:exp_share/features/balances/ui/balances_tab.dart';
 import 'package:exp_share/features/expenses/providers/expenses_provider.dart';
 import 'package:exp_share/features/groups/data/groups_repository.dart';
 import 'package:exp_share/features/groups/providers/groups_provider.dart';
+import 'package:exp_share/features/realtime/group_realtime_provider.dart';
 import 'package:exp_share/models/expense.dart';
 import 'package:exp_share/models/group_member.dart';
 import 'package:flutter/material.dart';
@@ -49,6 +50,8 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
   @override
   Widget build(BuildContext context) {
     final groupAsync = ref.watch(groupProvider(widget.groupId));
+    // Keep a realtime subscription alive while this screen is open.
+    ref.watch(groupRealtimeProvider(widget.groupId));
 
     return Scaffold(
       appBar: AppBar(
