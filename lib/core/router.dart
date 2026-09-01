@@ -4,6 +4,8 @@ import 'package:exp_share/features/expenses/ui/add_expense_screen.dart';
 import 'package:exp_share/features/groups/ui/group_detail_screen.dart';
 import 'package:exp_share/features/groups/ui/groups_list_screen.dart';
 import 'package:exp_share/features/insights/ui/insights_screen.dart';
+import 'package:exp_share/features/recurring/ui/add_recurring_screen.dart';
+import 'package:exp_share/features/recurring/ui/recurring_list_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -48,6 +50,20 @@ final routerProvider = Provider<GoRouter>((ref) {
                 builder: (_, state) => InsightsScreen(
                   groupId: state.pathParameters['groupId']!,
                 ),
+              ),
+              GoRoute(
+                path: 'recurring',
+                builder: (_, state) => RecurringListScreen(
+                  groupId: state.pathParameters['groupId']!,
+                ),
+                routes: [
+                  GoRoute(
+                    path: 'new',
+                    builder: (_, state) => AddRecurringScreen(
+                      groupId: state.pathParameters['groupId']!,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

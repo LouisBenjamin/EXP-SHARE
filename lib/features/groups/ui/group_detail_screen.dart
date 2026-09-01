@@ -60,6 +60,11 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
         centerTitle: false,
         actions: [
           IconButton(
+            tooltip: 'Recurring',
+            icon: const Icon(Icons.repeat),
+            onPressed: () => context.push('/groups/${widget.groupId}/recurring'),
+          ),
+          IconButton(
             tooltip: 'Insights',
             icon: const Icon(Icons.bar_chart),
             onPressed: () => context.push('/groups/${widget.groupId}/insights'),
