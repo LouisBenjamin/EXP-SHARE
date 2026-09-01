@@ -17,7 +17,7 @@ class GroupsRepository {
         .select()
         .eq('id', id)
         .single();
-    return Group.fromJson(data as Map<String, dynamic>);
+    return Group.fromJson(data);
   }
 
   Future<Group> createGroup({required String name}) async {
@@ -29,7 +29,7 @@ class GroupsRepository {
         .select()
         .single();
 
-    final group = Group.fromJson(groupData as Map<String, dynamic>);
+    final group = Group.fromJson(groupData);
 
     // Add the creator as the first member (RLS allows this for group owners).
     await supabase.from('group_members').insert({
@@ -63,6 +63,6 @@ class GroupsRepository {
         .eq('user_id', userId)
         .maybeSingle();
 
-    return data == null ? null : GroupMember.fromJson(data as Map<String, dynamic>);
+    return data == null ? null : GroupMember.fromJson(data);
   }
 }

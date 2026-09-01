@@ -1,6 +1,7 @@
-import 'package:exp_share/core/env.dart';
 import 'package:exp_share/core/supabase_client.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -10,36 +11,64 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  // Must match Supabase Auth → "Email OTP Length" (dashboard setting).
+  static const _codeLength = 8;
+
   final _emailController = TextEditingController();
+  final _codeController = TextEditingController();
   bool _loading = false;
-  bool _sent = false;
+  bool _codeSent = false;
 
   @override
   void dispose() {
     _emailController.dispose();
+    _codeController.dispose();
     super.dispose();
   }
 
-  Future<void> _sendMagicLink() async {
+  // Step 1 — email the user a 6-digit one-time code.
+  Future<void> _sendCode() async {
     final email = _emailController.text.trim();
     if (email.isEmpty) return;
 
     setState(() => _loading = true);
     try {
-      await supabase.auth.signInWithOtp(
-        email: email,
-        emailRedirectTo: Env.redirectUrl,
-      );
-      if (mounted) setState(() => _sent = true);
+      await supabase.auth.signInWithOtp(email: email);
+      if (mounted) setState(() => _codeSent = true);
     } on Exception catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
-      }
+      _showError(e);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  // Step 2 — exchange the code for a session. On success the auth state
+  // change fires and the router redirects to /groups automatically.
+  Future<void> _verifyCode() async {
+    final email = _emailController.text.trim();
+    final code = _codeController.text.trim();
+    if (code.isEmpty) return;
+
+    setState(() => _loading = true);
+    try {
+      await supabase.auth.verifyOTP(
+        email: email,
+        token: code,
+        type: OtpType.email,
+      );
+      // No manual navigation — GoRouter's auth redirect handles it.
+    } on Exception catch (e) {
+      _showError(e);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _showError(Object e) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.toString())),
+    );
   }
 
   @override
@@ -78,49 +107,94 @@ class _LoginScreenState extends State<LoginScreen> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 56),
-                if (_sent) ...[
-                  const Icon(Icons.mark_email_read, size: 52, color: Colors.green),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Check your inbox — a login link is on its way.',
-                    style: theme.textTheme.bodyLarge,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: () => setState(() => _sent = false),
-                    child: const Text('Try a different email'),
-                  ),
-                ] else ...[
-                  TextField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    textInputAction: TextInputAction.done,
-                    onSubmitted: (_) => _sendMagicLink(),
-                    autofocus: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Email address',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.email_outlined),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  FilledButton(
-                    onPressed: _loading ? null : _sendMagicLink,
-                    child: _loading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Send magic link'),
-                  ),
-                ],
+                if (_codeSent) ..._codeStep(theme) else ..._emailStep(),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  List<Widget> _emailStep() {
+    return [
+      TextField(
+        controller: _emailController,
+        keyboardType: TextInputType.emailAddress,
+        textInputAction: TextInputAction.done,
+        onSubmitted: (_) => _sendCode(),
+        autofocus: true,
+        decoration: const InputDecoration(
+          labelText: 'Email address',
+          border: OutlineInputBorder(),
+          prefixIcon: Icon(Icons.email_outlined),
+        ),
+      ),
+      const SizedBox(height: 16),
+      FilledButton(
+        onPressed: _loading ? null : _sendCode,
+        child: _loading
+            ? const _ButtonSpinner()
+            : const Text('Send login code'),
+      ),
+    ];
+  }
+
+  List<Widget> _codeStep(ThemeData theme) {
+    return [
+      Text(
+        'Enter the $_codeLength-digit code we emailed to '
+        '${_emailController.text.trim()}.',
+        style: theme.textTheme.bodyLarge,
+        textAlign: TextAlign.center,
+      ),
+      const SizedBox(height: 24),
+      TextField(
+        controller: _codeController,
+        keyboardType: TextInputType.number,
+        textInputAction: TextInputAction.done,
+        onSubmitted: (_) => _verifyCode(),
+        autofocus: true,
+        maxLength: _codeLength,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        textAlign: TextAlign.center,
+        style: theme.textTheme.headlineSmall?.copyWith(letterSpacing: 6),
+        decoration: InputDecoration(
+          border: const OutlineInputBorder(),
+          counterText: '',
+          hintText: '•' * _codeLength,
+        ),
+      ),
+      const SizedBox(height: 16),
+      FilledButton(
+        onPressed: _loading ? null : _verifyCode,
+        child: _loading
+            ? const _ButtonSpinner()
+            : const Text('Verify & log in'),
+      ),
+      const SizedBox(height: 8),
+      TextButton(
+        onPressed: _loading
+            ? null
+            : () => setState(() {
+                  _codeSent = false;
+                  _codeController.clear();
+                }),
+        child: const Text('Use a different email'),
+      ),
+    ];
+  }
+}
+
+class _ButtonSpinner extends StatelessWidget {
+  const _ButtonSpinner();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox(
+      height: 20,
+      width: 20,
+      child: CircularProgressIndicator(strokeWidth: 2),
     );
   }
 }
