@@ -41,7 +41,7 @@ class ExpensesRepository {
         .select('id')
         .single();
 
-    final expenseId = (expenseRow as Map<String, dynamic>)['id'] as String;
+    final expenseId = (expenseRow)['id'] as String;
 
     // Insert all split rows atomically in one request.
     await supabase.from('expense_splits').insert(

@@ -51,3 +51,9 @@ app.*.map.json
 # Supabase local dev
 supabase/.branches
 supabase/.temp
+
+# Claude Code personal settings (machine-local; may contain local secrets)
+.claude/settings.local.json
+
+# Desktop scaffolding — project targets web + Android, regenerate with `flutter create . --platforms=windows` if ever needed
+/windows/
