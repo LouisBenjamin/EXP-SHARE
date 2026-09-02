@@ -14,21 +14,20 @@ class CategorySpend {
 }
 
 class InsightsRepository {
-  // Total spend per category for [month] in a group (deleted expenses excluded).
-  Future<List<CategorySpend>> monthlyByCategory({
+  // Total spend per category between [from] (inclusive) and [toExclusive]
+  // (exclusive) in a group, deleted expenses excluded.
+  Future<List<CategorySpend>> byCategory({
     required String groupId,
-    required DateTime month,
+    required DateTime from,
+    required DateTime toExclusive,
   }) async {
-    final first = DateTime(month.year, month.month, 1);
-    final next = DateTime(month.year, month.month + 1, 1);
-
     final data = await supabase
         .from('expenses')
         .select('amount, categories(name, icon)')
         .eq('group_id', groupId)
         .isFilter('deleted_at', null)
-        .gte('occurred_on', isoDate(first))
-        .lt('occurred_on', isoDate(next));
+        .gte('occurred_on', isoDate(from))
+        .lt('occurred_on', isoDate(toExclusive));
 
     final totals = <String, ({String icon, Decimal total})>{};
     for (final row in data as List) {

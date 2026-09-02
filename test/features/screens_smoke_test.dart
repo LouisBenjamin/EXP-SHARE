@@ -8,6 +8,7 @@ import 'package:tally/features/groups/providers/groups_provider.dart';
 import 'package:tally/features/groups/ui/group_detail_screen.dart';
 import 'package:tally/features/import/providers/import_providers.dart';
 import 'package:tally/features/insights/data/insights_repository.dart';
+import 'package:tally/features/insights/logic/insights_range.dart';
 import 'package:tally/features/insights/providers/insights_provider.dart';
 import 'package:tally/features/insights/ui/insights_screen.dart';
 import 'package:tally/features/realtime/group_realtime_provider.dart';
@@ -97,16 +98,49 @@ void main() {
     await tester.pumpWidget(_host(
       const InsightsScreen(groupId: _gid),
       [
-        insightsProvider(_gid).overrideWith((ref) async => [
-              CategorySpend(name: 'Rent', icon: 'home', total: dec('1000')),
-              CategorySpend(
-                  name: 'Groceries', icon: 'shopping_cart', total: dec('250')),
-            ]),
+        insightsProvider((groupId: _gid, range: InsightsRange.monthToDate))
+            .overrideWith((ref) async => [
+                  CategorySpend(name: 'Rent', icon: 'home', total: dec('1000')),
+                  CategorySpend(
+                      name: 'Groceries',
+                      icon: 'shopping_cart',
+                      total: dec('250')),
+                ]),
       ],
     ));
     await tester.pumpAndSettle();
     expect(find.text('Rent'), findsOneWidget);
     expect(find.text('Groceries'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('InsightsScreen switches the range via the dropdown',
+      (tester) async {
+    _desktop(tester);
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(_host(
+      const InsightsScreen(groupId: _gid),
+      [
+        insightsProvider((groupId: _gid, range: InsightsRange.monthToDate))
+            .overrideWith((ref) async =>
+                [CategorySpend(name: 'Rent', icon: 'home', total: dec('1000'))]),
+        insightsProvider((groupId: _gid, range: InsightsRange.yearToDate))
+            .overrideWith((ref) async => [
+                  CategorySpend(
+                      name: 'Flights', icon: 'flight', total: dec('4200')),
+                ]),
+      ],
+    ));
+    await tester.pumpAndSettle();
+    expect(find.text('Rent'), findsOneWidget);
+
+    await tester.tap(find.byType(DropdownButton<InsightsRange>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Year to date').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Flights'), findsOneWidget);
+    expect(find.text('Rent'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -116,7 +150,10 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.pumpWidget(_host(
       const InsightsScreen(groupId: _gid),
-      [insightsProvider(_gid).overrideWith((ref) async => <CategorySpend>[])],
+      [
+        insightsProvider((groupId: _gid, range: InsightsRange.monthToDate))
+            .overrideWith((ref) async => <CategorySpend>[]),
+      ],
     ));
     await tester.pumpAndSettle();
     expect(find.textContaining('No spending'), findsOneWidget);

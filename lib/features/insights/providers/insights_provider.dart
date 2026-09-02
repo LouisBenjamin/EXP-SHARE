@@ -1,9 +1,17 @@
 import 'package:tally/features/insights/data/insights_repository.dart';
+import 'package:tally/features/insights/logic/insights_range.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// Current-month spend per category for a group.
+typedef InsightsArgs = ({String groupId, InsightsRange range});
+
+// Spend per category for a group over the selected [InsightsRange]. Keyed by
+// (groupId, range) so each range stays cached independently.
 final insightsProvider =
-    FutureProvider.family<List<CategorySpend>, String>((ref, groupId) {
-  return InsightsRepository()
-      .monthlyByCategory(groupId: groupId, month: DateTime.now());
+    FutureProvider.family<List<CategorySpend>, InsightsArgs>((ref, args) {
+  final w = args.range.window(DateTime.now());
+  return InsightsRepository().byCategory(
+    groupId: args.groupId,
+    from: w.from,
+    toExclusive: w.toExclusive,
+  );
 });
