@@ -40,6 +40,11 @@ dependencies:
   # dep of supabase_flutter so it can be imported directly.
   crypto: ^3.0.0
 
+  # Icon set for the whole app, including category icons. Use the static-const
+  # accessors (PhosphorIconsRegular.house), not PhosphorIcons.regular.house —
+  # only the former is const, which --tree-shake-icons needs.
+  phosphor_flutter: ^2.1.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

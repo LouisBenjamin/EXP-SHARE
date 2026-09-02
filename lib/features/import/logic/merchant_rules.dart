@@ -86,3 +86,23 @@ RuleHit matchMerchantRule({
   // and silently hiding a transaction is worse than showing it untagged.
   return const RuleHit(action: 'share', status: 'Untagged');
 }
+
+// The category a manually typed expense description should fall into, from
+// the group's tags — same matching rules as import (priority, then longer
+// pattern wins), but simpler: there's no separate "category description"
+// fallback pass, since a manual description is the only text available. A
+// skip-action tag (used to silence a merchant during import) has no bearing
+// here and is ignored, so it never blocks a manual category autofill.
+String? matchTagCategory({
+  required String text,
+  required List<MerchantRule> rules,
+}) {
+  final haystack = text.trim().toUpperCase();
+  if (haystack.isEmpty) return null;
+
+  for (final rule in _ordered(rules)) {
+    if (rule.isSkip) continue;
+    if (_matches(rule, haystack)) return rule.categoryId;
+  }
+  return null;
+}

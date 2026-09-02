@@ -135,10 +135,15 @@ which sounds clever and has no data behind it.
 Date-only values stay date-only. Never `.toLocal()` a statement date or compare
 it against `DateTime.now()`; see the note in `lib/core/dates.dart`.
 
-## Merchant rules
+## Merchant rules, a.k.a. tags
 
-A rule decides two things for a matched merchant: which category tags it, and
-whether it is offered for sharing at all (`share` / `skip`).
+A rule — user-facing name **tag**, table name still `merchant_rules` —
+decides two things for a matched merchant: which category tags it, and
+whether it is offered for sharing at all (`share` / `skip`). Tags are managed
+from the **Labels** tab on the group screen (`lib/features/labels/`), not a
+screen under Import any more; `/import/rules` redirects there for anyone with
+the old link. See [`categories-and-tags.md`](categories-and-tags.md) for the
+full data model and why tags and merchant rules are the same table.
 
 Matching is substring-based on a normalized name, because merchant names carry
 store and terminal noise — `COSTCO WHOLESALE W515` and `W521` are the same
@@ -163,6 +168,12 @@ Rules are **group-scoped**, not per-device, so everyone on a shared card tags
 the same merchant the same way instead of each person re-tagging every month.
 Regex is deliberately not supported: one roommate's bad pattern would break
 everyone's import.
+
+The same rules also drive `matchTagCategory`, which the Add-expense form calls
+as you type a description — a manual expense gets the same autofill a
+statement import does, without the category-description fallback pass (there's
+no second text source to fall back to). A skip-action tag is ignored there: it
+only means "never offer during import".
 
 ## Adding PDF support (phase 2)
 
@@ -195,10 +206,12 @@ lib/features/import/
                   statement_parser, fingerprint, merchant_rules, import_plan
   data/           import_repository, merchant_rules_repository
   providers/      merchantRulesProvider, importedFingerprintsProvider
-  ui/             import_screen, import_review_list, merchant_rules_screen
+  ui/             import_screen, import_review_list
+lib/features/labels/ui/    labels_tab, labels_screen, category_dialog, tag_dialog
 lib/core/dates.dart
-supabase/migrations/0011_import.sql
+supabase/migrations/0011_import.sql, 0012_categories.sql
 test/features/import/
+test/features/labels/
 ```
 
 Everything in `logic/` imports neither Supabase nor Flutter, which is what

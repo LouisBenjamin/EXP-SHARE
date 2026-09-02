@@ -1,6 +1,7 @@
 import 'package:decimal/decimal.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:tally/core/dates.dart';
+import 'package:tally/core/icons.dart';
 import 'package:tally/core/supabase_client.dart';
 import 'package:tally/core/widgets/page_body.dart';
 import 'package:tally/features/expenses/providers/categories_provider.dart';
@@ -20,7 +21,6 @@ import 'package:tally/models/import_result.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
 enum _Step { pick, review, done }
 
 class ImportScreen extends ConsumerStatefulWidget {
@@ -358,10 +358,10 @@ class _ImportScreenState extends ConsumerState<ImportScreen> {
         title: const Text('Import statement'),
         actions: [
           IconButton(
-            tooltip: 'Merchant rules',
-            icon: const Icon(Icons.rule),
+            tooltip: 'Tags',
+            icon: const Icon(AppIcons.tag),
             onPressed: () =>
-                context.push('/groups/${widget.groupId}/import/rules'),
+                context.push('/groups/${widget.groupId}/labels'),
           ),
         ],
       ),
@@ -507,7 +507,7 @@ class _ImportScreenState extends ConsumerState<ImportScreen> {
             Row(
               children: [
                 Icon(
-                  plan.valid ? Icons.check_circle : Icons.info_outline,
+                  plan.valid ? AppIcons.success : AppIcons.info,
                   size: 18,
                   color: plan.valid ? Colors.green : theme.colorScheme.error,
                 ),
@@ -528,7 +528,7 @@ class _ImportScreenState extends ConsumerState<ImportScreen> {
                     width: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Icon(Icons.download_done),
+                : const Icon(AppIcons.downloadDone),
             label: Text('Import $selectedCount'),
           ),
         ),
@@ -568,7 +568,7 @@ class _PickStep extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  Icons.receipt_long,
+                  AppIcons.receipt,
                   size: 56,
                   color: theme.colorScheme.primary,
                 ),
@@ -593,7 +593,7 @@ class _PickStep extends StatelessWidget {
                           width: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Icon(Icons.upload_file),
+                      : const Icon(AppIcons.upload),
                   label: const Text('Choose CSV file'),
                 ),
               ],
@@ -626,14 +626,14 @@ class _RangeBar extends StatelessWidget {
         Expanded(
           child: OutlinedButton.icon(
             onPressed: onPick,
-            icon: const Icon(Icons.date_range),
+            icon: const Icon(AppIcons.dateRange),
             label: Text(label),
           ),
         ),
         if (range != null)
           IconButton(
             tooltip: 'Clear date filter',
-            icon: const Icon(Icons.close),
+            icon: const Icon(AppIcons.close),
             onPressed: onClear,
           ),
       ],
@@ -659,7 +659,7 @@ class _DoneStep extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.check_circle,
+                Icon(AppIcons.success,
                     size: 56, color: theme.colorScheme.primary),
                 const SizedBox(height: 16),
                 Text(r?.summary ?? 'Imported',

@@ -224,6 +224,8 @@ lib/
     router.dart           go_router config and the auth redirect guard
     supabase_client.dart  Client init and the top-level `supabase` getter
     theme.dart            Material 3, seeded from a teal-green
+    icons.dart            The app's icon vocabulary -- Phosphor icons,
+                          category icon slugs, deterministic category tints
     widgets/
       page_body.dart      Desktop max-width wrapper
   features/
@@ -234,6 +236,7 @@ lib/
     insights/             Monthly category breakdown
     recurring/            Recurring templates
     import/               Bank statement import: logic / data / providers / ui
+    labels/                Category + tag management (the group's 4th tab)
     realtime/             Postgres change subscription per group
   models/                 Plain Dart classes mirroring DB rows
 supabase/
@@ -241,6 +244,7 @@ supabase/
 test/                     Unit tests for logic, widget tests for screens
 docs/
   statement-import.md     Import pipeline design and fingerprint threat model
+  categories-and-tags.md  Category/tag data model, icon vocabulary
   push-notifications.md   FCM setup handoff, see "Not built yet"
 .github/workflows/        Test, web deploy, Android APK build
 ```

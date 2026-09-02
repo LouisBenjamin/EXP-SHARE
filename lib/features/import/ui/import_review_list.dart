@@ -1,6 +1,6 @@
 import 'package:tally/core/dates.dart';
+import 'package:tally/core/icons.dart';
 import 'package:tally/core/money.dart';
-import 'package:tally/features/expenses/providers/categories_provider.dart';
 import 'package:tally/features/import/logic/import_plan.dart';
 import 'package:tally/models/category.dart';
 import 'package:flutter/material.dart';
@@ -107,12 +107,12 @@ class _TransactionCard extends StatelessWidget {
                 style: theme.textTheme.bodySmall,
               ),
               if (blocked)
-                const _Chip(label: 'Already imported', icon: Icons.done_all)
+                const _Chip(label: 'Already imported', icon: AppIcons.doneAll)
               else
                 ActionChip(
                   avatar: Icon(
                     category == null
-                        ? Icons.label_outline
+                        ? AppIcons.tag
                         : iconForCategory(category!.icon),
                     size: 16,
                   ),
@@ -136,7 +136,7 @@ class _TransactionCard extends StatelessWidget {
             if (!blocked)
               IconButton(
                 tooltip: 'Always tag this merchant',
-                icon: const Icon(Icons.bookmark_add_outlined),
+                icon: const Icon(AppIcons.bookmarkAdd),
                 onPressed: onAlwaysTag,
               ),
           ],
@@ -190,7 +190,7 @@ class _EmptyRows extends StatelessWidget {
       child: Column(
         children: [
           Icon(
-            Icons.filter_alt_off,
+            AppIcons.filterOff,
             size: 64,
             color: theme.colorScheme.outlineVariant,
           ),

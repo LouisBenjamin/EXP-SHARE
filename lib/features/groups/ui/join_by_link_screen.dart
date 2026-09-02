@@ -1,9 +1,9 @@
+import 'package:tally/core/icons.dart';
 import 'package:tally/features/groups/data/groups_repository.dart';
 import 'package:tally/features/groups/providers/groups_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
 // Landing screen for an invite link (/join?code=XXXXXX). The auth redirect in
 // the router guarantees the user is signed in by the time they reach here, so
 // we can join straight away and drop them into the group.
@@ -52,7 +52,7 @@ class _JoinByLinkScreenState extends ConsumerState<JoinByLinkScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.link_off,
+                    Icon(AppIcons.linkOff,
                         size: 56,
                         color: Theme.of(context).colorScheme.error),
                     const SizedBox(height: 16),

@@ -1,4 +1,5 @@
 import 'package:decimal/decimal.dart';
+import 'package:tally/core/icons.dart';
 import 'package:tally/core/supabase_client.dart';
 import 'package:tally/core/widgets/page_body.dart';
 import 'package:tally/features/expenses/providers/categories_provider.dart';
@@ -13,7 +14,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-
 class AddRecurringScreen extends ConsumerStatefulWidget {
   const AddRecurringScreen({super.key, required this.groupId});
   final String groupId;
@@ -262,7 +262,7 @@ class _AddRecurringScreenState extends ConsumerState<AddRecurringScreen> {
                   const SizedBox(height: 16),
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.event),
+                    leading: const Icon(AppIcons.dateRange),
                     title: const Text('Starts on'),
                     trailing: Text(DateFormat('MMM d, yyyy').format(_startDate)),
                     onTap: () async {
@@ -309,7 +309,7 @@ class _AddRecurringScreenState extends ConsumerState<AddRecurringScreen> {
                   Row(
                     children: [
                       Icon(
-                        compute.valid ? Icons.check_circle : Icons.info_outline,
+                        compute.valid ? AppIcons.success : AppIcons.info,
                         size: 18,
                         color: compute.valid
                             ? Colors.green

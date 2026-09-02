@@ -133,4 +133,50 @@ void main() {
       expect(match('COSTCO WHOLESALE W515').status, 'Untagged');
     });
   });
+
+  // matchTagCategory drives the Add-expense form's autofill: same tags, no
+  // category-description fallback pass (a typed description is all there is).
+  group('matchTagCategory', () {
+    test('matches a keyword anywhere in the description', () {
+      expect(
+        matchTagCategory(text: 'Costco run', rules: [rule('COSTCO')]),
+        'groceries',
+      );
+    });
+
+    test('on equal priority the longer pattern wins', () {
+      final rules = [
+        rule('COSTCO', id: 'broad', categoryId: 'shopping'),
+        rule('COSTCO GAS', id: 'narrow', categoryId: 'transport'),
+      ];
+      expect(
+        matchTagCategory(text: 'Costco gas fill-up', rules: rules),
+        'transport',
+      );
+    });
+
+    test('lower priority wins', () {
+      final rules = [
+        rule('COSTCO', id: 'general', priority: 200, categoryId: 'shopping'),
+        rule('COSTCO', id: 'specific', priority: 10, categoryId: 'groceries'),
+      ];
+      expect(matchTagCategory(text: 'Costco', rules: rules), 'groceries');
+    });
+
+    test('a skip rule is ignored, never blocking a manual autofill', () {
+      final rules = [rule('COSTCO', action: 'skip', categoryId: null)];
+      expect(matchTagCategory(text: 'Costco run', rules: rules), isNull);
+    });
+
+    test('no match returns null', () {
+      expect(
+        matchTagCategory(text: 'Dinner with friends', rules: [rule('COSTCO')]),
+        isNull,
+      );
+    });
+
+    test('an empty description matches nothing', () {
+      expect(matchTagCategory(text: '', rules: [rule('COSTCO')]), isNull);
+    });
+  });
 }
