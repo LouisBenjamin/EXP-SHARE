@@ -1,4 +1,5 @@
 import 'package:decimal/decimal.dart';
+import 'package:tally/core/dates.dart';
 import 'package:tally/core/supabase_client.dart';
 import 'package:tally/features/expenses/split_logic.dart';
 import 'package:tally/models/recurring_expense.dart';
@@ -40,7 +41,7 @@ class RecurringRepository {
           'category_id': categoryId,
           'frequency': frequency,
           'interval_count': intervalCount,
-          'next_occurrence': _isoDate(nextOccurrence),
+          'next_occurrence': isoDate(nextOccurrence),
           'created_by': userId,
         })
         .select('id')
@@ -71,6 +72,4 @@ class RecurringRepository {
     await supabase.from('recurring_expenses').delete().eq('id', id);
   }
 
-  String _isoDate(DateTime d) =>
-      '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 }

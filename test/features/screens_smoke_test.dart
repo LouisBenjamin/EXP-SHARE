@@ -208,6 +208,10 @@ void main() {
     expect(find.text('Members'), findsOneWidget);
     expect(find.text('Groceries'), findsOneWidget);
 
+    // Import is an app-bar action rather than a fourth tab, deliberately: the
+    // tab count above is what this test exists to pin.
+    expect(find.byTooltip('Import statement'), findsOneWidget);
+
     await tester.tap(find.text('Balances'));
     await tester.pumpAndSettle();
     expect(find.text('All settled up'), findsOneWidget);
