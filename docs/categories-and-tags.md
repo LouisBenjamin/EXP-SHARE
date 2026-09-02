@@ -22,12 +22,21 @@ a category never blocks or cascades, the rows that pointed at it just become
 uncategorized.
 
 RLS: `"members manage group categories"` (`for all`) lets a member
-insert/update/delete rows scoped to their own group; a null `group_id` makes
+insert/update rows scoped to their own group; a null `group_id` makes
 `is_group_member(group_id)` evaluate to null (not true), so global defaults
 are correctly read-only from the client. `CategoriesRepository`
 (`lib/features/expenses/data/categories_repository.dart`) only ever writes
 with an explicit `group_id` for this reason — there's no path to insert a
 global row from the app.
+
+**Deletion** goes through the `delete_category(id)` RPC
+(`0013_delete_category_rpc.sql`), not a direct `delete`. A plain
+`delete from categories` removes zero rows — silently, with no error — when
+RLS hides the target (a global default, or another group's category), and
+fails outright with a foreign-key violation anywhere the `0012` `on delete
+set null` cascade isn't in place. The `SECURITY DEFINER` RPC authorizes the
+caller, raises a real error for the default / wrong-group cases, and detaches
+every reference before deleting — the same pattern as `delete_expense`.
 
 ## Tags are `merchant_rules`, not a separate table
 
@@ -89,7 +98,8 @@ lib/features/labels/ui/
   labels_screen.dart     standalone route (old /import/rules redirects here)
   category_dialog.dart   name + icon picker
   tag_dialog.dart         keyword + category, match type behind "Advanced"
-supabase/migrations/0012_categories.sql
+supabase/migrations/0012_categories.sql   FKs -> on delete set null, unique names
+supabase/migrations/0013_delete_category_rpc.sql   delete_category() RPC
 test/features/import/merchant_rules_test.dart   matchMerchantRule, matchTagCategory
 test/features/labels/labels_tab_test.dart
 ```

@@ -39,10 +39,12 @@ class CategoriesRepository {
         .update({'name': name.trim(), 'icon': icon}).eq('id', id);
   }
 
-  // Any expense, recurring template or tag pointing at this category falls
-  // back to uncategorized (on delete set null, migration 0012) rather than
-  // blocking the delete.
+  // Routed through the delete_category RPC (migration 0013), not a direct
+  // delete. The RPC detaches any expense/recurring/tag pointing at the
+  // category before removing it, and — unlike a plain delete, which just
+  // removes zero rows and reports nothing — raises a real error when the
+  // target is a global default or lives in another group.
   Future<void> deleteCategory({required String id}) async {
-    await supabase.from('categories').delete().eq('id', id);
+    await supabase.rpc('delete_category', params: {'p_category_id': id});
   }
 }

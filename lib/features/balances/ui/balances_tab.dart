@@ -4,7 +4,6 @@ import 'package:tally/core/money.dart';
 import 'package:tally/features/balances/data/balances_repository.dart';
 import 'package:tally/features/balances/logic/settle.dart';
 import 'package:tally/features/balances/providers/balances_provider.dart';
-import 'package:tally/features/expenses/providers/expenses_provider.dart';
 import 'package:tally/features/groups/providers/groups_provider.dart';
 import 'package:tally/models/group_member.dart';
 import 'package:flutter/material.dart';
@@ -156,8 +155,7 @@ class _SettlementRowState extends ConsumerState<_SettlementRow> {
         toMemberId: t.toMemberId,
         amount: t.amount.toString(),
       );
-      ref.invalidate(balancesProvider(widget.groupId));
-      ref.invalidate(expensesProvider(widget.groupId));
+      invalidateGroupMoney(ref, widget.groupId);
     } on Exception catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)

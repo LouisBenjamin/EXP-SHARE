@@ -1,3 +1,5 @@
+import 'package:tally/features/balances/providers/balances_provider.dart';
+import 'package:tally/features/expenses/providers/expenses_provider.dart';
 import 'package:tally/features/groups/data/groups_repository.dart';
 import 'package:tally/models/group.dart';
 import 'package:tally/models/group_member.dart';
@@ -27,3 +29,15 @@ final groupProvider = FutureProvider.family<Group, String>((ref, groupId) {
 final membersProvider = FutureProvider.family<List<GroupMember>, String>(
   (ref, groupId) => GroupsRepository().fetchMembers(groupId: groupId),
 );
+
+// Call after anything changes a group's money — adding, editing, deleting or
+// importing an expense, or recording a settlement. Refreshes the expense list
+// and the in-group balances, and — easy to forget — groupSummariesProvider,
+// the separate view behind the "you owe / you're owed" tally on the groups
+// list. Nothing else invalidates it, so skipping it leaves that tally stale
+// until a manual pull-to-refresh.
+void invalidateGroupMoney(WidgetRef ref, String groupId) {
+  ref.invalidate(expensesProvider(groupId));
+  ref.invalidate(balancesProvider(groupId));
+  ref.invalidate(groupSummariesProvider);
+}
