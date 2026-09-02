@@ -14,9 +14,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Pinned: phosphor_flutter 2.1.0 (unmaintained) extends IconData, which
+      # newer stable Flutter marks final. Bump deliberately when replacing that dep.
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: 3.41.9
           cache: true
 
       - run: flutter pub get
