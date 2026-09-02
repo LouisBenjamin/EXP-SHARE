@@ -1,6 +1,6 @@
 # Tally
 
-Tally is a free, cross-platform expense splitter built with Flutter and Supabase. It covers what Splitwise covers, shared groups, itemised expenses, who-owes-whom balances and settle up, with no subscription, no ads, and a database you own outright.
+Tally is a free, cross-platform expense splitter built with Flutter and Supabase. It covers what Splitwise covers, shared groups, itemised expenses, who-owes-whom balances and settle up, plus recurring expenses and bank-statement import, with no subscription, no ads, and a database you own outright.
 
 One codebase ships to the web and to Android. This is a portfolio project, so the README goes further than usual into *why* things are built the way they are.
 
@@ -44,6 +44,18 @@ A `profiles` row is created automatically by a Postgres trigger on `auth.users`,
 ### Insights
 
 Monthly spend per category for a group, sorted from largest to smallest.
+
+### Importing a bank statement
+
+Built for the case where roommates share one card and want to peel the shared transactions off it each month, without hand-typing forty rows.
+
+* Pick a bank CSV, review the transactions on screen, tick the shared ones, choose how they split, and promote them into real group expenses in a single batch.
+* **Merchant rules** are group-scoped, not per device. A rule matches a merchant name fragment as a substring (`COSTCO WHOLESALE W515` and `W521` are the same warehouse) and decides two things: which category the transaction gets tagged with, and whether it is offered for sharing at all. An `action = 'skip'` rule means "my hobby shop is never a shared expense" for the whole group at once.
+* **Cross-device deduplication.** Two roommates importing overlapping copies of the same statement from two phones is the normal case, not an error. Each promoted expense stores an opaque `source_fingerprint`; before review the app fetches the group's existing fingerprints and marks rows that are already in as *Already imported*, with the checkbox disabled. A partial unique index backstops the race where both devices commit at the same moment.
+* Split maths reuses `computeSplits()`, the same function the expense forms use, so an equal or percentage split means exactly one thing across the whole app.
+* Nothing throws. Every parser returns a result object with a `valid` flag and a readable status, so one malformed row costs one row instead of the whole file.
+
+The privacy design is covered under [Architecture](#decision-statement-import-keeps-raw-data-off-the-server) below and in full in [`docs/statement-import.md`](docs/statement-import.md).
 
 ### Live updates
 
@@ -107,10 +119,11 @@ The trade-off is real and worth naming: business rules end up written in SQL, wh
 | `groups` | Name, join code, photo URL, creator. |
 | `group_members` | One row per participant in a group. `user_id` is nullable. |
 | `categories` | Global rows (`group_id is null`) plus per-group ones. |
-| `expenses` | Amount, payer, category, split type, `occurred_on`, `deleted_at`. |
+| `expenses` | Amount, payer, category, split type, `occurred_on`, `deleted_at`, and `source_fingerprint` for imported rows. |
 | `expense_splits` | One row per participant per expense, with amount and optional percent. |
 | `settlements` | A payment from one member to another. |
 | `recurring_expenses` / `recurring_expense_splits` | Templates and their split shape. |
+| `merchant_rules` | Group-scoped statement-import presets: a merchant name pattern, a category, and share or skip. Names only, no amounts or references. |
 | `device_tokens` | Push tokens, groundwork for FCM. |
 
 ### Decision: everything points at `group_members`, not `profiles`
@@ -144,6 +157,7 @@ The insert policy on `group_members` only lets a group's creator add their own f
 * `update_expense(...)` rewrites an expense and its splits in one transaction, re-checking membership and re-verifying that the splits sum to the amount **server-side**, so client validation is a convenience rather than the enforcement point.
 * `delete_expense(id)` performs the soft delete. A plain `update` that sets `deleted_at` is rejected, because the resulting row no longer satisfies the `deleted_at is null` select policy.
 * `update_group_photo(group_id, url)` writes the photo URL after the storage upload.
+* `import_expenses(group_id, items)` promotes reviewed statement rows into expenses and splits in one transaction, re-checks the splits-sum-to-amount invariant per row, and returns `{ inserted, skipped, skipped_fingerprints }` so a row someone else already imported is reported rather than raised as an error.
 
 ### Decision: views for read shapes, with `security_invoker = true`
 
@@ -155,6 +169,19 @@ Both are declared `with (security_invoker = true)` so the caller's RLS applies t
 ### Decision: soft delete
 
 `expenses.deleted_at` is a timestamp rather than a real `delete`. Reads, the balances view and the insights query all filter on `deleted_at is null`. History survives, and a deleted expense stops affecting anyone's balance the moment it is removed.
+
+### Decision: statement import keeps raw data off the server
+
+Raw statement data never reaches Postgres. The CSV is parsed on the device and held in screen state for the review session only. It is never uploaded and never written to disk, and closing the screen discards it. Exactly two things cross the wire:
+
+* `merchant_rules` rows, which hold merchant name patterns only: no amounts, dates, reference numbers or card numbers.
+* `expenses.source_fingerprint`, which is `SHA-256(group_id + ':' + normalized_reference_number)`, computed on the client.
+
+The fingerprint is deliberately hashed client-side. Doing it in Postgres would mean sending the bank reference number to the server, which is the exact thing the design avoids, so the server cannot verify the digest and simply trusts it. That is an acceptable trade: the input is a roughly 23-character reference number rather than a low-entropy merchant name, so the hash is not brute-forceable; the group id is mixed in, so the same transaction produces different digests in different groups and cannot be correlated across them; and the worst a forged digest can do is block a transaction in a group the caller already belongs to and could have imported and deleted anyway.
+
+The unique index on `(group_id, source_fingerprint)` is partial on two conditions, `source_fingerprint is not null and deleted_at is null`. The first leaves hand-entered expenses unconstrained. The second means deleting an imported expense makes it importable again, rather than leaving a soft-deleted row that blocks its own transaction forever with no visible expense to explain why. The `on conflict` clause in `import_expenses()` repeats that predicate verbatim, because Postgres will not use a partial unique index as a conflict arbiter otherwise, and the mismatch fails at runtime rather than at migration time.
+
+`normalizeReference()` is pinned by known vectors in `test/features/import/fingerprint_test.dart`. Changing it would invalidate every fingerprint already stored, so if those tests fail, that is the signal to stop.
 
 ### Migrations are the source of truth
 
@@ -176,7 +203,7 @@ Rounding is defined rather than incidental, because a split that fails to sum to
 * **Percentage splits** round each share half-up to whole cents, then give the last participant `amount - assigned`, absorbing the drift so the parts always reconcile exactly.
 * **Exact splits** are never adjusted, only validated. The form reports "Assigned $X of $Y" until the sum matches, and enables save only then.
 
-The split maths lives in one pure function, `computeSplits()`, shared by the one-off expense form and the recurring template form, so the two can never drift apart.
+The split maths lives in one pure function, `computeSplits()`, shared by the one-off expense form, the recurring template form and the statement-import plan, so the three can never drift apart. (Import allows equal and percentage splits only: an exact split is defined against one total and cannot be applied across rows with different totals.)
 
 ## Debt simplification
 
@@ -193,6 +220,7 @@ lib/
   core/
     env.dart              Compile-time config from --dart-define
     money.dart            Decimal conversion, formatting, rounding rules
+    dates.dart            Date-only helpers (never .toLocal() a statement date)
     router.dart           go_router config and the auth redirect guard
     supabase_client.dart  Client init and the top-level `supabase` getter
     theme.dart            Material 3, seeded from a teal-green
@@ -205,14 +233,16 @@ lib/
     balances/             Balances tab, settle up, debt simplification
     insights/             Monthly category breakdown
     recurring/            Recurring templates
+    import/               Bank statement import: logic / data / providers / ui
     realtime/             Postgres change subscription per group
   models/                 Plain Dart classes mirroring DB rows
 supabase/
   migrations/             Numbered SQL, the schema's source of truth
 test/                     Unit tests for logic, widget tests for screens
 docs/
+  statement-import.md     Import pipeline design and fingerprint threat model
   push-notifications.md   FCM setup handoff, see "Not built yet"
-.github/workflows/        Web deploy and Android APK build
+.github/workflows/        Test, web deploy, Android APK build
 ```
 
 ---
@@ -260,15 +290,17 @@ The anon key is a public key by design. It is safe in a client bundle precisely 
 flutter test
 ```
 
-58 tests, split along the same seam as the architecture:
+165 tests, split along the same seam as the architecture:
 
-* **Pure logic tests**, no Flutter and no network: rounding and formatting in `money_test.dart`, all three split modes plus their validation states in `split_logic_test.dart`, debt simplification in `settle_test.dart`, and JSON to model mapping in `model_parsing_test.dart`.
+* **Pure logic tests**, no Flutter and no network: rounding and formatting in `money_test.dart`, date-only parsing in `dates_test.dart`, all three split modes plus their validation states in `split_logic_test.dart`, debt simplification in `settle_test.dart`, and JSON to model mapping in `model_parsing_test.dart`.
+* **Statement import tests** in `test/features/import/`: CSV dialect detection, field parsing, merchant-rule precedence, the review-to-plan builder, and the fingerprint. The fingerprint test pins `normalizeReference()` against known vectors, so a change that would silently invalidate every stored fingerprint fails the build instead.
 * **Widget tests** for the screens, including a smoke test that pumps each one. `test/support/test_supabase.dart` initialises a throwaway Supabase instance pointed at localhost and stubs the plugin channels `Supabase.initialize()` touches, so screens that read `supabase.auth.currentUser` while building can be pumped without a network call. `currentUser` is null, which is the logged-out state.
 
 Keeping the money rules in pure functions is what makes this cheap: the interesting logic is covered by fast tests that need no database, no mock HTTP layer and no widget tree.
 
 ## CI/CD and distribution
 
+* **`test.yml`** runs `flutter analyze` and `flutter test` on every push and pull request. It is kept separate from the deploy workflow on purpose: it needs no secrets, so it stays green and fast on forks and on PRs from any branch.
 * **`deploy-web.yml`** builds the web bundle on every push and pull request against `main`, and deploys to Cloudflare Pages only on a push to `main` and only once `CLOUDFLARE_API_TOKEN` is set. Until then the build still runs and validates the app, so the pipeline stays green rather than failing on missing credentials.
 * **`build-apk.yml`** builds a release APK on demand and on any `v*` tag, uploads it as an artifact, and attaches it to the GitHub Release for tag builds. The Android package name is `com.tally.app`.
 
@@ -283,6 +315,7 @@ Required repository secrets: `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `REDIRECT_U
 | Routing | go_router |
 | Money | `package:decimal` |
 | Backend | Supabase: Postgres, Auth, Realtime, Storage |
+| Statement parsing | `csv` (RFC 4180), `file_picker`, `crypto` (SHA-256) |
 | Scheduling | pg_cron |
 | Hosting | Cloudflare Pages |
 | Distribution | GitHub Releases APK |
@@ -292,4 +325,4 @@ Required repository secrets: `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `REDIRECT_U
 * **Background push notifications.** The `device_tokens` table and its RLS exist, and live in-app updates already work through Realtime without Firebase. The rest needs a Firebase project and credentials that cannot be scaffolded without an account, and adding Firebase to Android without `google-services.json` breaks the Gradle build, so it is written up as a handoff in [`docs/push-notifications.md`](docs/push-notifications.md) rather than left half-wired.
 * **Multi-currency.** Every money table carries a `currency` column defaulting to CAD, but nothing converts between currencies yet.
 * **Removing members** and transferring group ownership.
-* **Tests in CI.** The suite runs locally today; no workflow invokes `flutter test`.
+* **PDF statement import.** The import pipeline is already behind a `StatementParser` interface (`canParse` / `parse`, bytes not files), so a `PdfStatementParser` added to one list needs no change to the review UI, the merchant rules or the fingerprinting. It has to parse client-side to stay inside the privacy boundary, which rules out native-only libraries.
