@@ -2,7 +2,6 @@ import 'package:tally/core/icons.dart';
 import 'package:tally/core/money.dart';
 import 'package:tally/core/supabase_client.dart';
 import 'package:tally/core/widgets/page_body.dart';
-import 'package:tally/features/balances/providers/balances_provider.dart';
 import 'package:tally/features/balances/ui/balances_tab.dart';
 import 'package:tally/features/expenses/data/expenses_repository.dart';
 import 'package:tally/features/expenses/providers/categories_provider.dart';
@@ -42,14 +41,12 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
 
   Future<void> _addExpense() async {
     await context.push('/groups/${widget.groupId}/expenses/new');
-    ref.invalidate(expensesProvider(widget.groupId));
-    ref.invalidate(balancesProvider(widget.groupId));
+    invalidateGroupMoney(ref, widget.groupId);
   }
 
   Future<void> _importStatement() async {
     await context.push('/groups/${widget.groupId}/import');
-    ref.invalidate(expensesProvider(widget.groupId));
-    ref.invalidate(balancesProvider(widget.groupId));
+    invalidateGroupMoney(ref, widget.groupId);
   }
 
   Future<void> _addGuest() async {
@@ -182,10 +179,7 @@ class _ExpenseCard extends ConsumerWidget {
   final String groupId;
   final Category? category;
 
-  void _refresh(WidgetRef ref) {
-    ref.invalidate(expensesProvider(groupId));
-    ref.invalidate(balancesProvider(groupId));
-  }
+  void _refresh(WidgetRef ref) => invalidateGroupMoney(ref, groupId);
 
   Future<void> _edit(BuildContext context, WidgetRef ref) async {
     await context.push('/groups/$groupId/expenses/${expense.id}/edit');

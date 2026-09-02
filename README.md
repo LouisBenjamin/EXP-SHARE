@@ -156,6 +156,7 @@ The insert policy on `group_members` only lets a group's creator add their own f
 * `add_guest_member(group_id, name)` verifies the caller's membership before inserting a guest.
 * `update_expense(...)` rewrites an expense and its splits in one transaction, re-checking membership and re-verifying that the splits sum to the amount **server-side**, so client validation is a convenience rather than the enforcement point.
 * `delete_expense(id)` performs the soft delete. A plain `update` that sets `deleted_at` is rejected, because the resulting row no longer satisfies the `deleted_at is null` select policy.
+* `delete_category(id)` detaches every expense / recurring template / tag pointing at a category and then deletes it. A direct `delete from categories` silently removes zero rows when RLS hides the target (a global default, another group's row) and fails on a foreign-key violation wherever the `0012` `on delete set null` cascade isn't in place; the RPC raises a real error for the former and doesn't depend on the latter.
 * `update_group_photo(group_id, url)` writes the photo URL after the storage upload.
 * `import_expenses(group_id, items)` promotes reviewed statement rows into expenses and splits in one transaction, re-checks the splits-sum-to-amount invariant per row, and returns `{ inserted, skipped, skipped_fingerprints }` so a row someone else already imported is reported rather than raised as an error.
 
