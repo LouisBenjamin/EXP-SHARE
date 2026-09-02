@@ -6,6 +6,7 @@ import 'package:tally/features/expenses/providers/expenses_provider.dart';
 import 'package:tally/features/expenses/ui/add_expense_screen.dart';
 import 'package:tally/features/groups/providers/groups_provider.dart';
 import 'package:tally/features/groups/ui/group_detail_screen.dart';
+import 'package:tally/features/import/providers/import_providers.dart';
 import 'package:tally/features/insights/data/insights_repository.dart';
 import 'package:tally/features/insights/providers/insights_provider.dart';
 import 'package:tally/features/insights/ui/insights_screen.dart';
@@ -174,8 +175,9 @@ void main() {
       [
         membersProvider(_gid).overrideWith((ref) async => _members),
         categoriesProvider(_gid).overrideWith((ref) async => [
-              const Category(id: 'c1', name: 'Food', icon: 'restaurant'),
+              const Category(id: 'c1', name: 'Food', icon: 'fork-knife'),
             ]),
+        merchantRulesProvider(_gid).overrideWith((ref) async => []),
       ],
     ));
     await tester.pumpAndSettle();
@@ -188,7 +190,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('GroupDetailScreen renders its three tabs', (tester) async {
+  testWidgets('GroupDetailScreen renders its four tabs', (tester) async {
     _desktop(tester);
     addTearDown(tester.view.reset);
     await tester.pumpWidget(_host(
@@ -199,6 +201,10 @@ void main() {
         expensesProvider(_gid).overrideWith((ref) async => _expenses),
         balancesProvider(_gid).overrideWith((ref) async => _balances),
         groupRealtimeProvider(_gid).overrideWithValue(null),
+        categoriesProvider(_gid).overrideWith((ref) async => const [
+              Category(id: 'c1', name: 'Food', icon: 'fork-knife'),
+            ]),
+        merchantRulesProvider(_gid).overrideWith((ref) async => []),
       ],
     ));
     await tester.pumpAndSettle();
@@ -206,9 +212,10 @@ void main() {
     expect(find.text('Expenses'), findsOneWidget);
     expect(find.text('Balances'), findsOneWidget);
     expect(find.text('Members'), findsOneWidget);
+    expect(find.text('Labels'), findsOneWidget);
     expect(find.text('Groceries'), findsOneWidget);
 
-    // Import is an app-bar action rather than a fourth tab, deliberately: the
+    // Import is an app-bar action rather than its own tab, deliberately: the
     // tab count above is what this test exists to pin.
     expect(find.byTooltip('Import statement'), findsOneWidget);
 
@@ -220,6 +227,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('Members ('), findsOneWidget);
     expect(find.text('AB452A'), findsOneWidget);
+
+    await tester.tap(find.text('Labels'));
+    await tester.pumpAndSettle();
+    expect(find.text('Food'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

@@ -1,4 +1,5 @@
 import 'package:decimal/decimal.dart';
+import 'package:tally/core/icons.dart';
 import 'package:tally/core/supabase_client.dart';
 import 'package:tally/core/widgets/page_body.dart';
 import 'package:tally/features/expenses/data/expenses_repository.dart';
@@ -8,10 +9,13 @@ import 'package:tally/features/expenses/providers/expenses_provider.dart';
 import 'package:tally/features/expenses/split_logic.dart';
 import 'package:tally/features/expenses/ui/split_editor.dart';
 import 'package:tally/features/groups/providers/groups_provider.dart';
+import 'package:tally/features/import/logic/merchant_rules.dart';
+import 'package:tally/features/import/providers/import_providers.dart';
 import 'package:tally/models/category.dart';
 import 'package:tally/models/expense.dart';
 import 'package:tally/models/expense_split.dart';
 import 'package:tally/models/group_member.dart';
+import 'package:tally/models/merchant_rule.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -42,6 +46,10 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   final Set<String> _selected = {};
   String? _payerMemberId;
   String? _categoryId;
+  // Once the user has picked a category by hand, a tag match on the
+  // description must never silently override it.
+  bool _categoryTouched = false;
+  bool _autoTagged = false; // drives the "Tagged automatically" hint
   bool _inited = false;
   bool _submitting = false;
 
@@ -65,6 +73,22 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       _exactCtl.putIfAbsent(id, () => TextEditingController());
   TextEditingController _percent(String id) =>
       _percentCtl.putIfAbsent(id, () => TextEditingController());
+
+  // Fills in the category from the group's tags as the description is typed,
+  // the same matching a statement import uses (longer pattern wins, skip
+  // rules ignored). Never fires once the user has picked a category by hand.
+  void _applyTag(List<MerchantRule> rules) {
+    if (_categoryTouched) return;
+    final categoryId = matchTagCategory(
+      text: _descriptionController.text,
+      rules: rules,
+    );
+    if (categoryId == null || categoryId == _categoryId) return;
+    setState(() {
+      _categoryId = categoryId;
+      _autoTagged = true;
+    });
+  }
 
   SplitOutcome _compute(List<GroupMember> members) => computeSplits(
         splitType: _splitType,
@@ -95,6 +119,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     _amountController.text = e.amount.toString();
     _descriptionController.text = e.description;
     _categoryId = e.categoryId;
+    // Never let a tag rewrite a category that already exists on the expense.
+    _categoryTouched = true;
     _payerMemberId = e.payerMemberId;
     _splitType = e.splitType;
     _selected
@@ -214,6 +240,9 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
 
   Widget _form(List<GroupMember> members) {
     final categoriesAsync = ref.watch(categoriesProvider(widget.groupId));
+    final rules =
+        ref.watch(merchantRulesProvider(widget.groupId)).valueOrNull ??
+            const <MerchantRule>[];
     final compute = _compute(members);
 
     return Form(
@@ -251,13 +280,28 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
               hintText: 'e.g. Dinner, Groceries…',
               border: OutlineInputBorder(),
             ),
+            onChanged: (_) => _applyTag(rules),
           ),
           const SizedBox(height: 16),
           _CategoryDropdown(
             categoriesAsync: categoriesAsync,
             value: _categoryId,
-            onChanged: (v) => setState(() => _categoryId = v),
+            onChanged: (v) => setState(() {
+              _categoryId = v;
+              _categoryTouched = true;
+              _autoTagged = false;
+            }),
           ),
+          if (_autoTagged)
+            Padding(
+              padding: const EdgeInsets.only(top: 4, left: 4),
+              child: Text(
+                'Tagged automatically from your tags — tap to change.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+            ),
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
             initialValue: _payerMemberId,
@@ -306,7 +350,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
           Row(
             children: [
               Icon(
-                compute.valid ? Icons.check_circle : Icons.info_outline,
+                compute.valid ? AppIcons.success : AppIcons.info,
                 size: 18,
                 color: compute.valid
                     ? Colors.green

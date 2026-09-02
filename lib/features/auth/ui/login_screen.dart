@@ -1,8 +1,8 @@
+import 'package:tally/core/icons.dart';
 import 'package:tally/core/supabase_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -85,7 +85,7 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Icon(
-                  Icons.receipt_long,
+                  AppIcons.receipt,
                   size: 72,
                   color: theme.colorScheme.primary,
                 ),
@@ -127,7 +127,7 @@ class _LoginScreenState extends State<LoginScreen> {
         decoration: const InputDecoration(
           labelText: 'Email address',
           border: OutlineInputBorder(),
-          prefixIcon: Icon(Icons.email_outlined),
+          prefixIcon: Icon(AppIcons.email),
         ),
       ),
       const SizedBox(height: 16),

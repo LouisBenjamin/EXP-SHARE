@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:tally/core/icons.dart';
 import 'package:tally/core/widgets/page_body.dart';
 import 'package:tally/features/groups/data/groups_repository.dart';
 import 'package:tally/features/groups/providers/groups_provider.dart';
@@ -95,7 +96,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                           child: CircleAvatar(
                             radius: 18,
                             backgroundColor: theme.colorScheme.primary,
-                            child: Icon(Icons.camera_alt,
+                            child: Icon(AppIcons.camera,
                                 size: 18, color: theme.colorScheme.onPrimary),
                           ),
                         ),

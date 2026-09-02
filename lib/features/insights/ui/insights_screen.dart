@@ -1,13 +1,12 @@
 import 'package:decimal/decimal.dart';
+import 'package:tally/core/icons.dart';
 import 'package:tally/core/money.dart';
 import 'package:tally/core/widgets/page_body.dart';
-import 'package:tally/features/expenses/providers/categories_provider.dart';
 import 'package:tally/features/insights/data/insights_repository.dart';
 import 'package:tally/features/insights/providers/insights_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-
 class InsightsScreen extends ConsumerWidget {
   const InsightsScreen({super.key, required this.groupId});
   final String groupId;

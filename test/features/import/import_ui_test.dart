@@ -6,7 +6,7 @@ import 'package:tally/features/import/logic/import_plan.dart';
 import 'package:tally/features/import/providers/import_providers.dart';
 import 'package:tally/features/import/ui/import_review_list.dart';
 import 'package:tally/features/import/ui/import_screen.dart';
-import 'package:tally/features/import/ui/merchant_rules_screen.dart';
+import 'package:tally/features/labels/ui/labels_screen.dart';
 import 'package:tally/models/category.dart';
 import 'package:tally/models/group_member.dart';
 import 'package:tally/models/merchant_rule.dart';
@@ -267,8 +267,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('offers the merchant rules screen from the app bar',
-        (tester) async {
+    testWidgets('offers the labels screen from the app bar', (tester) async {
       _desktop(tester);
       addTearDown(tester.view.reset);
 
@@ -283,17 +282,17 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byTooltip('Merchant rules'), findsOneWidget);
+      expect(find.byTooltip('Tags'), findsOneWidget);
     });
   });
 
-  group('MerchantRulesScreen', () {
-    testWidgets('lists the group rules', (tester) async {
+  group('LabelsScreen', () {
+    testWidgets('lists the group categories and tags', (tester) async {
       _desktop(tester);
       addTearDown(tester.view.reset);
 
       await tester.pumpWidget(
-        _host(const MerchantRulesScreen(groupId: _gid), [
+        _host(const LabelsScreen(groupId: _gid), [
           categoriesProvider(_gid).overrideWith((ref) async => _categories),
           merchantRulesProvider(_gid).overrideWith((ref) async => _rules),
         ]),
@@ -301,17 +300,16 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('COSTCO WHOLESALE'), findsOneWidget);
-      expect(find.textContaining('Groceries'), findsOneWidget);
+      expect(find.textContaining('Groceries'), findsWidgets);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('shows an empty state explaining rules are group-wide',
-        (tester) async {
+    testWidgets('shows an empty state when there are no tags', (tester) async {
       _desktop(tester);
       addTearDown(tester.view.reset);
 
       await tester.pumpWidget(
-        _host(const MerchantRulesScreen(groupId: _gid), [
+        _host(const LabelsScreen(groupId: _gid), [
           categoriesProvider(_gid).overrideWith((ref) async => _categories),
           merchantRulesProvider(_gid)
               .overrideWith((ref) async => <MerchantRule>[]),
@@ -319,8 +317,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('No rules yet'), findsOneWidget);
-      expect(find.textContaining('everyone in the group'), findsOneWidget);
+      expect(find.text('No tags yet.'), findsOneWidget);
     });
 
     testWidgets('a skip rule reads as never shared', (tester) async {
@@ -328,7 +325,7 @@ void main() {
       addTearDown(tester.view.reset);
 
       await tester.pumpWidget(
-        _host(const MerchantRulesScreen(groupId: _gid), [
+        _host(const LabelsScreen(groupId: _gid), [
           categoriesProvider(_gid).overrideWith((ref) async => _categories),
           merchantRulesProvider(_gid).overrideWith((ref) async => [
                 const MerchantRule(

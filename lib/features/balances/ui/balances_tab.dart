@@ -1,4 +1,5 @@
 import 'package:decimal/decimal.dart';
+import 'package:tally/core/icons.dart';
 import 'package:tally/core/money.dart';
 import 'package:tally/features/balances/data/balances_repository.dart';
 import 'package:tally/features/balances/logic/settle.dart';
@@ -8,7 +9,6 @@ import 'package:tally/features/groups/providers/groups_provider.dart';
 import 'package:tally/models/group_member.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 class BalancesTab extends ConsumerWidget {
   const BalancesTab({super.key, required this.groupId});
   final String groupId;
@@ -36,7 +36,7 @@ class BalancesTab extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.check_circle_outline, size: 64, color: Colors.green),
+                  Icon(AppIcons.success, size: 64, color: Colors.green),
                   SizedBox(height: 16),
                   Text('All settled up', style: TextStyle(fontSize: 18)),
                 ],
@@ -174,7 +174,7 @@ class _SettlementRowState extends ConsumerState<_SettlementRow> {
     final t = widget.transfer;
     return Card(
       child: ListTile(
-        leading: const Icon(Icons.arrow_forward),
+        leading: const Icon(AppIcons.arrowForward),
         title: Text('${widget.fromName} → ${widget.toName}'),
         subtitle: Text(formatCurrency(t.amount)),
         trailing: _saving

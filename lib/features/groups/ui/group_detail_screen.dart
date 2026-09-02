@@ -1,13 +1,17 @@
+import 'package:tally/core/icons.dart';
 import 'package:tally/core/money.dart';
 import 'package:tally/core/supabase_client.dart';
 import 'package:tally/core/widgets/page_body.dart';
 import 'package:tally/features/balances/providers/balances_provider.dart';
 import 'package:tally/features/balances/ui/balances_tab.dart';
 import 'package:tally/features/expenses/data/expenses_repository.dart';
+import 'package:tally/features/expenses/providers/categories_provider.dart';
 import 'package:tally/features/expenses/providers/expenses_provider.dart';
 import 'package:tally/features/groups/data/groups_repository.dart';
 import 'package:tally/features/groups/providers/groups_provider.dart';
+import 'package:tally/features/labels/ui/labels_tab.dart';
 import 'package:tally/features/realtime/group_realtime_provider.dart';
+import 'package:tally/models/category.dart';
 import 'package:tally/models/expense.dart';
 import 'package:tally/models/group_member.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -28,7 +32,7 @@ class GroupDetailScreen extends ConsumerStatefulWidget {
 class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tab =
-      TabController(length: 3, vsync: this)..addListener(() => setState(() {}));
+      TabController(length: 4, vsync: this)..addListener(() => setState(() {}));
 
   @override
   void dispose() {
@@ -73,22 +77,22 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
         actions: [
           IconButton(
             tooltip: 'Recurring',
-            icon: const Icon(Icons.repeat),
+            icon: const Icon(AppIcons.repeat),
             onPressed: () => context.push('/groups/${widget.groupId}/recurring'),
           ),
           IconButton(
             tooltip: 'Insights',
-            icon: const Icon(Icons.bar_chart),
+            icon: const Icon(AppIcons.insights),
             onPressed: () => context.push('/groups/${widget.groupId}/insights'),
           ),
           IconButton(
             tooltip: 'Import statement',
-            icon: const Icon(Icons.upload_file),
+            icon: const Icon(AppIcons.upload),
             onPressed: _importStatement,
           ),
           IconButton(
             tooltip: 'Group settings',
-            icon: const Icon(Icons.settings_outlined),
+            icon: const Icon(AppIcons.settings),
             onPressed: () => context.push('/groups/${widget.groupId}/settings'),
           ),
         ],
@@ -98,18 +102,19 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
             Tab(text: 'Expenses'),
             Tab(text: 'Balances'),
             Tab(text: 'Members'),
+            Tab(text: 'Labels'),
           ],
         ),
       ),
       floatingActionButton: switch (_tab.index) {
         0 => FloatingActionButton.extended(
             onPressed: _addExpense,
-            icon: const Icon(Icons.add),
+            icon: const Icon(AppIcons.add),
             label: const Text('Add expense'),
           ),
         2 => FloatingActionButton.extended(
             onPressed: _addGuest,
-            icon: const Icon(Icons.person_add),
+            icon: const Icon(AppIcons.personAdd),
             label: const Text('Add guest'),
           ),
         _ => null,
@@ -121,6 +126,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
             _ExpensesTab(groupId: widget.groupId),
             BalancesTab(groupId: widget.groupId),
             _MembersTab(groupId: widget.groupId),
+            LabelsTab(groupId: widget.groupId),
           ],
         ),
       ),
@@ -137,12 +143,18 @@ class _ExpensesTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final expensesAsync = ref.watch(expensesProvider(groupId));
+    // A slow categories fetch never blocks the expense list — cards just
+    // render uncategorized until it resolves.
+    final categories = ref.watch(categoriesProvider(groupId)).valueOrNull ??
+        const <Category>[];
+    final categoryById = {for (final c in categories) c.id: c};
+
     return expensesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Error: $e')),
       data: (expenses) => expenses.isEmpty
           ? const _EmptyState(
-              icon: Icons.receipt_long,
+              icon: AppIcons.receipt,
               title: 'No expenses yet',
               subtitle: 'Tap + to log the first one.',
             )
@@ -150,17 +162,25 @@ class _ExpensesTab extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
               itemCount: expenses.length,
               separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (_, i) =>
-                  _ExpenseCard(expense: expenses[i], groupId: groupId),
+              itemBuilder: (_, i) => _ExpenseCard(
+                expense: expenses[i],
+                groupId: groupId,
+                category: categoryById[expenses[i].categoryId],
+              ),
             ),
     );
   }
 }
 
 class _ExpenseCard extends ConsumerWidget {
-  const _ExpenseCard({required this.expense, required this.groupId});
+  const _ExpenseCard({
+    required this.expense,
+    required this.groupId,
+    required this.category,
+  });
   final Expense expense;
   final String groupId;
+  final Category? category;
 
   void _refresh(WidgetRef ref) {
     ref.invalidate(expensesProvider(groupId));
@@ -211,7 +231,7 @@ class _ExpenseCard extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.edit_outlined),
+              leading: const Icon(AppIcons.edit),
               title: const Text('Edit'),
               onTap: () {
                 Navigator.pop(sheetCtx);
@@ -219,7 +239,7 @@ class _ExpenseCard extends ConsumerWidget {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.delete_outline),
+              leading: const Icon(AppIcons.delete),
               title: const Text('Delete'),
               onTap: () {
                 Navigator.pop(sheetCtx);
@@ -237,24 +257,37 @@ class _ExpenseCard extends ConsumerWidget {
     final theme = Theme.of(context);
     final dateStr = DateFormat('MMM d').format(expense.occurredOn);
     final amountStr = formatCurrency(expense.amount, currency: expense.currency);
+    final category = this.category;
+
+    // Uncategorized expenses keep the original neutral look; a category
+    // gets its own icon on a deterministic tint (see categoryTint).
+    final Color tint;
+    final Color onTint;
+    final IconData icon;
+    if (category == null) {
+      tint = theme.colorScheme.secondaryContainer;
+      onTint = theme.colorScheme.onSecondaryContainer;
+      icon = AppIcons.receipt;
+    } else {
+      tint = categoryTint(category.id, theme.brightness);
+      onTint = onCategoryTint(tint);
+      icon = iconForCategory(category.icon);
+    }
 
     return Card(
       clipBehavior: Clip.hardEdge,
       child: ListTile(
         onTap: () => _showActions(context, ref),
         leading: CircleAvatar(
-          backgroundColor: theme.colorScheme.secondaryContainer,
-          child: Icon(
-            Icons.receipt_outlined,
-            color: theme.colorScheme.onSecondaryContainer,
-          ),
+          backgroundColor: tint,
+          child: Icon(icon, color: onTint),
         ),
         title: Text(
           expense.description.isEmpty ? 'Expense' : expense.description,
           style: theme.textTheme.titleSmall,
         ),
         subtitle: Text(
-          dateStr,
+          category == null ? dateStr : '$dateStr · ${category.name}',
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -320,7 +353,7 @@ class _JoinCodeCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            Icon(Icons.key, color: theme.colorScheme.onPrimaryContainer),
+            Icon(AppIcons.key, color: theme.colorScheme.onPrimaryContainer),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -343,7 +376,7 @@ class _JoinCodeCard extends StatelessWidget {
             ),
             IconButton(
               tooltip: 'Copy code',
-              icon: Icon(Icons.copy, color: theme.colorScheme.onPrimaryContainer),
+              icon: Icon(AppIcons.copy, color: theme.colorScheme.onPrimaryContainer),
               onPressed: () {
                 Clipboard.setData(ClipboardData(text: code));
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -353,7 +386,7 @@ class _JoinCodeCard extends StatelessWidget {
             ),
             IconButton(
               tooltip: 'Share invite',
-              icon: Icon(Icons.ios_share,
+              icon: Icon(AppIcons.share,
                   color: theme.colorScheme.onPrimaryContainer),
               onPressed: () {
                 // On web, share a one-tap link that opens straight to the join

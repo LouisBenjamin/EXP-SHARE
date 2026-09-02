@@ -6,8 +6,8 @@ import 'package:tally/features/groups/ui/group_settings_screen.dart';
 import 'package:tally/features/groups/ui/groups_list_screen.dart';
 import 'package:tally/features/groups/ui/join_by_link_screen.dart';
 import 'package:tally/features/import/ui/import_screen.dart';
-import 'package:tally/features/import/ui/merchant_rules_screen.dart';
 import 'package:tally/features/insights/ui/insights_screen.dart';
+import 'package:tally/features/labels/ui/labels_screen.dart';
 import 'package:tally/features/recurring/ui/add_recurring_screen.dart';
 import 'package:tally/features/recurring/ui/recurring_list_screen.dart';
 import 'package:flutter/material.dart';
@@ -95,13 +95,20 @@ final routerProvider = Provider<GoRouter>((ref) {
                   groupId: state.pathParameters['groupId']!,
                 ),
                 routes: [
+                  // Rules became tags and moved onto the Labels tab; keep the
+                  // old path alive as a redirect for anyone with it bookmarked.
                   GoRoute(
                     path: 'rules',
-                    builder: (_, state) => MerchantRulesScreen(
-                      groupId: state.pathParameters['groupId']!,
-                    ),
+                    redirect: (_, state) =>
+                        '/groups/${state.pathParameters['groupId']}/labels',
                   ),
                 ],
+              ),
+              GoRoute(
+                path: 'labels',
+                builder: (_, state) => LabelsScreen(
+                  groupId: state.pathParameters['groupId']!,
+                ),
               ),
             ],
           ),

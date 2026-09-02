@@ -1,3 +1,4 @@
+import 'package:tally/core/icons.dart';
 import 'package:tally/core/money.dart';
 import 'package:tally/core/widgets/page_body.dart';
 import 'package:tally/features/groups/data/groups_repository.dart';
@@ -8,7 +9,6 @@ import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
 class GroupsListScreen extends ConsumerWidget {
   const GroupsListScreen({super.key});
 
@@ -23,7 +23,7 @@ class GroupsListScreen extends ConsumerWidget {
         actions: [
           IconButton(
             tooltip: 'Join by code',
-            icon: const Icon(Icons.login),
+            icon: const Icon(AppIcons.signIn),
             onPressed: () => showDialog(
               context: context,
               builder: (_) => const JoinGroupDialog(),
@@ -41,7 +41,7 @@ class GroupsListScreen extends ConsumerWidget {
             },
           ),
         ),
-        icon: const Icon(Icons.add),
+        icon: const Icon(AppIcons.add),
         label: const Text('New group'),
       ),
       body: PageBody(
@@ -210,7 +210,7 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.group_add, size: 64, color: theme.colorScheme.outlineVariant),
+          Icon(AppIcons.groupAdd, size: 64, color: theme.colorScheme.outlineVariant),
           const SizedBox(height: 16),
           Text('No groups yet', style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),

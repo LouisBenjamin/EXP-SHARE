@@ -1,3 +1,4 @@
+import 'package:tally/core/icons.dart';
 import 'package:tally/core/money.dart';
 import 'package:tally/core/widgets/page_body.dart';
 import 'package:tally/features/groups/providers/groups_provider.dart';
@@ -9,7 +10,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-
 class RecurringListScreen extends ConsumerWidget {
   const RecurringListScreen({super.key, required this.groupId});
   final String groupId;
@@ -28,7 +28,7 @@ class RecurringListScreen extends ConsumerWidget {
           await context.push('/groups/$groupId/recurring/new');
           ref.invalidate(recurringProvider(groupId));
         },
-        icon: const Icon(Icons.add),
+        icon: const Icon(AppIcons.add),
         label: const Text('New recurring'),
       ),
       body: PageBody(
@@ -104,7 +104,7 @@ class _RecurringCard extends StatelessWidget {
             ),
             IconButton(
               tooltip: 'Delete',
-              icon: const Icon(Icons.delete_outline),
+              icon: const Icon(AppIcons.delete),
               onPressed: () async {
                 final ok = await showDialog<bool>(
                   context: context,
@@ -147,7 +147,7 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.repeat, size: 64, color: theme.colorScheme.outlineVariant),
+          Icon(AppIcons.repeat, size: 64, color: theme.colorScheme.outlineVariant),
           const SizedBox(height: 16),
           Text('No recurring expenses', style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
