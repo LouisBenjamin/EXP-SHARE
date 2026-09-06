@@ -1,0 +1,4 @@
+# This is a vendored package (see README.md), not an app — per Dart convention,
+# packages don't commit their own lockfile; the root pubspec.lock governs
+# resolution for anything that depends on it.
+pubspec.lock

@@ -50,5 +50,17 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^4.0.0
 
+# Upstream phosphor_flutter declares all 6 weight fonts (Bold/Duotone/Fill/
+# Light/Regular/Thin, ~2.6MB) unconditionally in its own pubspec, so Flutter
+# bundles all of them regardless of which weight classes the app actually
+# imports — font tree-shaking only shrinks each font's glyph set, it can't
+# drop an entire unused font family. Tally only ever uses PhosphorIconsRegular
+# (see lib/core/icons.dart), so this override swaps in a vendored copy with
+# the other 5 fonts (~2.2MB of dead weight) stripped from its pubspec. The
+# Dart API is untouched — see third_party/phosphor_flutter_regular/pubspec.yaml.
+dependency_overrides:
+  phosphor_flutter:
+    path: third_party/phosphor_flutter_regular
+
 flutter:
   uses-material-design: true
