@@ -1,0 +1,33 @@
+name: phosphor_flutter
+description: >
+  Vendored, trimmed copy of phosphor_flutter 2.1.0 for Tally. Tally only ever
+  uses PhosphorIconsRegular (see lib/core/icons.dart), but upstream declares
+  all six weight fonts (Bold/Duotone/Fill/Light/Regular/Thin) unconditionally
+  in its pubspec, so Flutter bundles all ~2.6MB of them regardless of which
+  Dart classes are actually referenced — font *asset* inclusion is driven by
+  this file, not by import graphs, so app-side tree-shaking can't remove them.
+  This fork drops the 5 unused font files and their font-family declarations,
+  keeping the Dart API (including the unused weight classes) byte-for-byte
+  identical. See third_party/phosphor_flutter_regular/README.md.
+version: 2.1.0
+homepage: https://phosphoricons.com/
+repository: https://github.com/phosphor-icons/phosphor-flutter
+
+environment:
+  sdk: ">=2.12.0 <4.0.0"
+  flutter: ">=1.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  fonts:
+    - family: PhosphorRegular
+      fonts:
+        - asset: lib/fonts/Phosphor.ttf
+          weight: 400
